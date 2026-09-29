@@ -18,7 +18,7 @@ export const supabaseService = {
           .from('posts')
           .select(`
             *,
-            autor:profiles(*),
+            autor:profiles(*, athlete_profile:athlete_profiles(*)),
             comments(*, autor:profiles(nombre, avatar_url, rol))
           `)
           .order('created_at', { ascending: false });
@@ -33,7 +33,16 @@ export const supabaseService = {
 
         const { data, error } = await query;
         if (error) throw error;
-        return (data as Post[]) || [];
+        return ((data as any[]) || []).map((post) => {
+          const athleteProfile = Array.isArray(post.autor?.athlete_profile)
+            ? post.autor.athlete_profile[0]
+            : post.autor?.athlete_profile;
+
+          return {
+            ...post,
+            athlete_info: post.athlete_info || athleteProfile || undefined,
+          };
+        }) as Post[];
       } catch (err) {
         console.warn('Fallback a datos locales para posts:', err);
       }
@@ -424,7 +433,12 @@ export const supabaseService = {
   // --------------------------------------------------------------------------
   // 3. STORAGE DE SUPABASE (VIDEOS Y AVATARES)
   // --------------------------------------------------------------------------
-  async uploadVideo(file: File, userId: string, onProgress?: (percent: number) => void): Promise<{ url: string; path: string }> {
+  async uploadVideo(
+    file: File,
+    userId: string,
+    onProgress?: (percent: number) => void,
+    options?: { thumbnail?: Blob }
+  ): Promise<{ url: string; path: string; thumbnailUrl?: string }> {
     if (isSupabaseConfigured()) {
       try {
         const fileExt = file.name.split('.').pop() || 'mp4';
@@ -438,21 +452,40 @@ export const supabaseService = {
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: false,
+            contentType: file.type || 'video/mp4',
           });
 
         if (uploadError) throw uploadError;
 
-        if (onProgress) onProgress(80);
-
         const { data: publicData } = supabase.storage
           .from('sports-videos')
           .getPublicUrl(filePath);
+
+        let thumbnailUrl: string | undefined;
+        if (options?.thumbnail) {
+          const thumbnailPath = `${filePath.replace(/\.[^/.]+$/, '')}-thumbnail.jpg`;
+          const { error: thumbnailError } = await supabase.storage
+            .from('sports-videos')
+            .upload(thumbnailPath, options.thumbnail, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/jpeg',
+            });
+
+          if (!thumbnailError) {
+            const { data: thumbnailData } = supabase.storage
+              .from('sports-videos')
+              .getPublicUrl(thumbnailPath);
+            thumbnailUrl = thumbnailData.publicUrl;
+          }
+        }
 
         if (onProgress) onProgress(100);
 
         return {
           url: publicData.publicUrl,
           path: filePath,
+          thumbnailUrl,
         };
       } catch (err) {
         console.warn('Error subiendo video a Supabase Storage, usando blob/simulación:', err);
@@ -469,6 +502,7 @@ export const supabaseService = {
     return {
       url: localUrl,
       path: `simulated/${userId}/${file.name}`,
+      thumbnailUrl: options?.thumbnail ? URL.createObjectURL(options.thumbnail) : undefined,
     };
   },
 

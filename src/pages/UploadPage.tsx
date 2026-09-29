@@ -7,12 +7,59 @@ interface UploadPageProps {
   onPostCreated: () => void;
 }
 
+const formatDuration = (durationInSeconds: number): string => {
+  const totalSeconds = Math.max(0, Math.round(durationInSeconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, '0');
+  return `${minutes}:${seconds}`;
+};
+
+const extractVideoMetadata = (file: File): Promise<{ duration: number; thumbnail: Blob }> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const objectUrl = URL.createObjectURL(file);
+
+    const cleanup = () => {
+      URL.revokeObjectURL(objectUrl);
+      video.remove();
+    };
+
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      video.currentTime = 0;
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const duration = video.duration;
+      canvas.toBlob((thumbnail) => {
+        cleanup();
+        if (thumbnail) {
+          resolve({ duration, thumbnail });
+        } else {
+          reject(new Error('No se pudo generar la miniatura del video.'));
+        }
+      }, 'image/jpeg', 0.88);
+    };
+    video.onerror = () => {
+      cleanup();
+      reject(new Error('No se pudo leer la duración del video.'));
+    };
+    video.src = objectUrl;
+  });
+};
+
 export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
   const { profile, athleteProfile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
+  const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
   const [deporte, setDeporte] = useState<string>('Fútbol');
   const [descripcion, setDescripcion] = useState<string>('');
   const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -33,7 +80,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
     'Béisbol',
   ];
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setErrorMsg(null);
 
     // Validación de tamaño (Máximo 500 MB)
@@ -43,30 +90,41 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
       return;
     }
 
-    // Validación de extensiones permitidas: MP4, MOV, AVI
-    const validExtensions = ['mp4', 'mov', 'avi'];
+    // MP4/H.264 es el formato con soporte más consistente en navegadores.
+    const validExtensions = ['mp4'];
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (!extension || !validExtensions.includes(extension)) {
-      setErrorMsg('Formato de video no válido. Formatos soportados: MP4, MOV, AVI.');
+      setErrorMsg('Formato de video no válido. Sube un archivo MP4 para asegurar su reproducción.');
       return;
     }
 
-    setSelectedFile(file);
     const objectUrl = URL.createObjectURL(file);
     setVideoPreviewUrl(objectUrl);
+
+    try {
+      const metadata = await extractVideoMetadata(file);
+      setSelectedFile(file);
+      setVideoDuration(metadata.duration);
+      setThumbnailBlob(metadata.thumbnail);
+      setThumbnailPreviewUrl(URL.createObjectURL(metadata.thumbnail));
+    } catch (err: any) {
+      setSelectedFile(null);
+      setVideoPreviewUrl(null);
+      setErrorMsg(err.message || 'No se pudo leer el video.');
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+      void handleFile(e.dataTransfer.files[0]);
     }
   };
 
   const handleSelectFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+      void handleFile(e.target.files[0]);
     }
   };
 
@@ -93,10 +151,11 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
 
     try {
       // 1. Subir a Supabase Storage
-      const { url, path } = await supabaseService.uploadVideo(
+      const { url, path, thumbnailUrl } = await supabaseService.uploadVideo(
         selectedFile,
         profile.id,
-        (progress) => setUploadProgress(progress)
+        (progress) => setUploadProgress(progress),
+        { thumbnail: thumbnailBlob || undefined }
       );
 
       // 2. Crear post en la base de datos
@@ -107,8 +166,8 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
         titulo: descripcion.slice(0, 40),
         descripcion: descripcion.trim(),
         deporte,
-        duracion: '1:00',
-        thumbnail_url: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1000&auto=format&fit=crop&q=80',
+        duracion: formatDuration(videoDuration),
+        thumbnail_url: thumbnailUrl || thumbnailPreviewUrl || undefined,
         autor: profile,
         athlete_info: {
           posicion: athleteProfile?.posicion || 'Delantero',
@@ -177,7 +236,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="video/mp4,video/quicktime,video/x-msvideo"
+                accept="video/mp4"
                 onChange={handleSelectFile}
                 className="hidden"
               />
@@ -203,7 +262,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
                     <p className="text-xs text-slate-500 mt-0.5">o haz clic para seleccionar un archivo</p>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Formatos soportados: MP4, MOV, AVI • Máximo 500MB
+                    Formato soportado: MP4 • Máximo 500MB
                   </p>
                 </div>
               )}

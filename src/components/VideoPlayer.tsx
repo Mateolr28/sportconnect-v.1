@@ -17,15 +17,22 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!videoRef.current) return;
     if (isPlaying) {
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
-      videoRef.current.play().catch(() => {});
-      setIsPlaying(true);
+      try {
+        await videoRef.current.play();
+        setHasError(false);
+        setIsPlaying(true);
+      } catch {
+        setHasError(true);
+        setIsPlaying(false);
+      }
     }
   };
 
@@ -57,8 +64,20 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         playsInline
         loop
         className="w-full h-full object-cover"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onError={() => {
+          setHasError(true);
+          setIsPlaying(false);
+        }}
         onEnded={() => setIsPlaying(false)}
       />
+
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/75 px-6 text-center text-sm text-white z-10">
+          Este video no se puede reproducir. Sube un archivo MP4 compatible.
+        </div>
+      )}
 
       {/* Badge superior izquierdo (ej. Delantero • 22 años) */}
       {badgeText && (

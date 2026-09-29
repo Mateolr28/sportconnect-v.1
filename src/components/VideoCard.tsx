@@ -5,6 +5,29 @@ import { VideoPlayer } from './VideoPlayer';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
 
+const formatRelativeTime = (createdAt?: string): string => {
+  if (!createdAt) return 'Fecha desconocida';
+
+  const createdTime = new Date(createdAt).getTime();
+  if (Number.isNaN(createdTime)) return 'Fecha desconocida';
+
+  const elapsedSeconds = Math.max(0, Math.floor((Date.now() - createdTime) / 1000));
+  if (elapsedSeconds < 60) return 'Hace unos segundos';
+
+  const units = [
+    { seconds: 31536000, singular: 'año', plural: 'años' },
+    { seconds: 2592000, singular: 'mes', plural: 'meses' },
+    { seconds: 604800, singular: 'semana', plural: 'semanas' },
+    { seconds: 86400, singular: 'día', plural: 'días' },
+    { seconds: 3600, singular: 'hora', plural: 'horas' },
+    { seconds: 60, singular: 'minuto', plural: 'minutos' },
+  ];
+
+  const unit = units.find(({ seconds }) => elapsedSeconds >= seconds) || units[units.length - 1];
+  const value = Math.floor(elapsedSeconds / unit.seconds);
+  return `Hace ${value} ${value === 1 ? unit.singular : unit.plural}`;
+};
+
 interface VideoCardProps {
   post: Post;
   onOpenComments: (post: Post) => void;
@@ -68,7 +91,8 @@ export const VideoCard: React.FC<VideoCardProps> = ({
     .join('')
     .toUpperCase();
 
-  const badgeText = `${post.athlete_info?.posicion || 'Delantero'} • ${post.athlete_info?.edad || 22} años`;
+  const badgeText = `${post.athlete_info?.posicion || 'Posición no disponible'} • ${post.athlete_info?.edad ?? 'Edad no disponible'}`;
+  const relativeTime = formatRelativeTime(post.created_at);
 
   return (
     <article className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md">
@@ -94,7 +118,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              {post.autor?.ubicacion || 'Madrid, España'} • Hace 3 horas
+              {post.autor?.ubicacion || 'Madrid, España'} • {relativeTime}
             </p>
           </div>
         </div>
