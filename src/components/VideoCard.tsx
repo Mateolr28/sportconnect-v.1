@@ -83,7 +83,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
     }
   };
 
-  const authorName = post.autor?.nombre || 'Carlos Martínez';
+  const authorName = post.autor?.nombre || 'Usuario';
   const authorInitials = authorName
     .split(' ')
     .map((n) => n[0])

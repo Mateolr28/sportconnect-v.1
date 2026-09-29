@@ -5,7 +5,6 @@ import { AthleteProfileView } from '../components/AthleteProfileView';
 import { RecruiterProfileView } from '../components/RecruiterProfileView';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { supabaseService } from '../services/supabaseService';
-import { INITIAL_POSTS } from '../lib/mockData';
 
 interface ProfilePageProps {
   viewingUserId?: string | null;
@@ -27,6 +26,12 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   const isOwnProfile = !viewingUserId || viewingUserId === loggedInProfile?.id;
+
+  const handleDeletePost = async (post: Post) => {
+    if (!isOwnProfile || !loggedInProfile) return;
+    await supabaseService.deletePost(post.id, loggedInProfile.id, post.storage_path);
+    setUserPosts((currentPosts) => currentPosts.filter((currentPost) => currentPost.id !== post.id));
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -81,10 +86,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         <AthleteProfileView
           profile={targetProfile}
           athlete={targetAthlete}
-          posts={userPosts.length > 0 ? userPosts : INITIAL_POSTS}
+          posts={userPosts}
           isOwnProfile={isOwnProfile}
           onEditProfile={() => setIsEditModalOpen(true)}
           onContactAthlete={onContactAthlete}
+          onDeletePost={isOwnProfile ? handleDeletePost : undefined}
         />
       ) : (
         <RecruiterProfileView

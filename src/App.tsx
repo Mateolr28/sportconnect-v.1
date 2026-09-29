@@ -81,7 +81,6 @@ function AppContent() {
             if (tab === 'perfil') setViewingUserId(null); // Ver perfil propio
             setCurrentTab(tab);
           }}
-          onOpenSupabaseModal={() => setIsSupabaseModalOpen(true)}
         />
       </div>
 

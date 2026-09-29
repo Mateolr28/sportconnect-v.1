@@ -29,11 +29,7 @@ export const getPosts = async (req: AuthenticatedRequest, res: Response) => {
       return res.json({ success: true, data });
     }
 
-    // Demo data response
-    return res.json({
-      success: true,
-      message: 'Operando en modo de datos deportivos integrados',
-    });
+    return res.status(503).json({ error: 'Supabase no está configurado' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Error al obtener publicaciones' });
   }
@@ -72,21 +68,7 @@ export const createPost = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(201).json({ success: true, data });
     }
 
-    return res.status(201).json({
-      success: true,
-      data: {
-        id: 'post-' + Date.now(),
-        user_id: userId,
-        video_url,
-        storage_path,
-        titulo,
-        descripcion,
-        deporte,
-        duracion: duracion || '0:45',
-        thumbnail_url,
-        created_at: new Date().toISOString(),
-      },
-    });
+    return res.status(503).json({ error: 'Supabase no está configurado' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Error al crear publicación' });
   }

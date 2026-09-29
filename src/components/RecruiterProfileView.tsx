@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, MapPin, Calendar, Edit3, Target, Mail, ArrowRight } from 'lucide-react';
+import { Building2, MapPin, Edit3, Target, ArrowRight } from 'lucide-react';
 import { Profile, RecruiterProfile } from '../types';
 
 interface RecruiterProfileViewProps {
@@ -27,21 +27,6 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
         'Defensas centrales (18-24 años)',
       ];
 
-  const recentActivity = [
-    {
-      id: 'a1111111-1111-4111-a111-111111111111',
-      nombre: 'Carlos Martínez',
-      deporte: 'Fútbol',
-      estado: 'Contactado • Hace 2 días',
-    },
-    {
-      id: 'a2222222-2222-4222-a222-222222222222',
-      nombre: 'Ana Rodríguez',
-      deporte: 'Baloncesto',
-      estado: 'Evaluación técnica • Hace 5 días',
-    },
-  ];
-
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
       {/* 1. Header Banner Reclutador */}
@@ -66,10 +51,6 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" />
                     {profile.ubicacion || 'Barcelona, España'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Diciembre 2023
                   </span>
                 </div>
               </div>
@@ -162,41 +143,6 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
         </div>
       </section>
 
-      {/* 3. Sección: Actividad reciente */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-bold text-slate-900">Actividad reciente</h2>
-
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden divide-y divide-slate-100 shadow-sm">
-          {recentActivity.map((item) => (
-            <div
-              key={item.id}
-              className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors"
-            >
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-slate-100 text-[#1E3A8A] flex items-center justify-center flex-shrink-0">
-                  <Mail className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-slate-900">{item.nombre}</span>
-                    <span className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-medium">
-                      {item.deporte}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-500">{item.estado}</p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => onViewAthlete && onViewAthlete(item.id)}
-                className="px-3.5 py-1.5 border border-slate-200 hover:border-slate-300 text-slate-700 rounded-xl text-xs font-semibold transition-colors hover:bg-white"
-              >
-                Ver perfil
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 };

@@ -32,16 +32,7 @@ export const getProfile = async (req: AuthenticatedRequest, res: Response) => {
       }
     }
 
-    return res.json({
-      success: true,
-      profile: {
-        id,
-        nombre: 'Carlos Martínez',
-        email: 'carlos.martinez@sportconnect.dev',
-        rol: 'deportista',
-        ubicacion: 'Madrid, España',
-      },
-    });
+    return res.status(503).json({ error: 'Supabase no está configurado' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Error al obtener perfil' });
   }

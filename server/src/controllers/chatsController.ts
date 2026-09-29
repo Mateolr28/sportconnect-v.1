@@ -78,7 +78,7 @@ export const createChat = async (req: AuthenticatedRequest, res: Response) => {
       return res.status(201).json({ success: true, chatId: chat.id, existing: false });
     }
 
-    return res.json({ success: true, chatId: 'chat-demo-' + target_user_id });
+    return res.status(503).json({ error: 'Supabase no está configurado' });
   } catch (error: any) {
     return res.status(500).json({ error: error.message || 'Error al crear conversación' });
   }

@@ -23,7 +23,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [asistencias, setAsistencias] = useState(athleteProfile?.asistencias || 42);
 
   // Campos de reclutador
-  const [nombreClub, setNombreClub] = useState(recruiterProfile?.nombre_club || 'FC Barcelona Academy');
+  const [nombreClub, setNombreClub] = useState(recruiterProfile?.nombre_club || '');
   const [deportistasContactados, setDeportistasContactados] = useState(recruiterProfile?.deportistas_contactados || 150);
   const [contrataciones, setContrataciones] = useState(recruiterProfile?.contrataciones || 12);
   const [scoutsActivos, setScoutsActivos] = useState(recruiterProfile?.scouts_activos || 8);

@@ -1,11 +1,10 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Post, Comment, Chat, Message, Profile, AthleteProfile, RecruiterProfile, FeedFilters } from '../types';
-import { INITIAL_POSTS, INITIAL_CHATS, INITIAL_MESSAGES, INITIAL_PROFILES, INITIAL_ATHLETE_PROFILES, INITIAL_RECRUITER_PROFILES } from '../lib/mockData';
 
 // Estado local reactivo cuando opera en modo offline / pre-configuración
-let localPosts: Post[] = [...INITIAL_POSTS];
-let localChats: Chat[] = [...INITIAL_CHATS];
-let localMessages: Record<string, Message[]> = { ...INITIAL_MESSAGES };
+let localPosts: Post[] = [];
+let localChats: Chat[] = [];
+let localMessages: Record<string, Message[]> = {};
 
 export const supabaseService = {
   // --------------------------------------------------------------------------
@@ -115,7 +114,7 @@ export const supabaseService = {
       likes_count: 0,
       comments_count: 0,
       created_at: new Date().toISOString(),
-      autor: autor || INITIAL_PROFILES[0],
+      autor,
       athlete_info: athlete_info || { posicion: 'Delantero', edad: 22 },
       is_liked_by_user: false,
       is_saved_by_user: false,
@@ -124,6 +123,43 @@ export const supabaseService = {
 
     localPosts = [newPost, ...localPosts];
     return newPost;
+  },
+
+  async deletePost(postId: string, userId: string, storagePath?: string): Promise<void> {
+    if (isSupabaseConfigured()) {
+      const { data: post, error: postError } = await supabase
+        .from('posts')
+        .select('user_id, storage_path')
+        .eq('id', postId)
+        .single();
+
+      if (postError) throw postError;
+      if (post.user_id !== userId) throw new Error('No puedes eliminar un video que no es tuyo.');
+
+      const videoPath = storagePath || post.storage_path;
+      if (videoPath) {
+        const thumbnailPath = `${videoPath.replace(/\.[^/.]+$/, '')}-thumbnail.jpg`;
+        const { error: storageError } = await supabase.storage
+          .from('sports-videos')
+          .remove([videoPath, thumbnailPath]);
+
+        if (storageError) throw storageError;
+      }
+
+      const { error: deleteError } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId)
+        .eq('user_id', userId);
+
+      if (deleteError) throw deleteError;
+      return;
+    }
+
+    const post = localPosts.find((item) => item.id === postId);
+    if (!post) return;
+    if (post.user_id !== userId) throw new Error('No puedes eliminar un video que no es tuyo.');
+    localPosts = localPosts.filter((item) => item.id !== postId);
   },
 
   async toggleLike(postId: string, userId: string): Promise<{ liked: boolean; count: number }> {
@@ -555,10 +591,6 @@ export const supabaseService = {
       }
     }
 
-    const profile = INITIAL_PROFILES.find((p) => p.id === userId) || null;
-    const athlete = profile ? INITIAL_ATHLETE_PROFILES[profile.id] || null : null;
-    const recruiter = profile ? INITIAL_RECRUITER_PROFILES[profile.id] || null : null;
-
-    return { profile, athlete, recruiter };
+    return { profile: null, athlete: null, recruiter: null };
   },
 };

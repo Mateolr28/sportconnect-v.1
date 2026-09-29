@@ -1,17 +1,14 @@
-import React, { useState } from 'react';
-import { Home, User, Upload, MessageCircle, LogOut, RefreshCw, Dumbbell, ShieldCheck, Database } from 'lucide-react';
+import React from 'react';
+import { Home, User, Upload, MessageCircle, LogOut, Dumbbell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { INITIAL_PROFILES } from '../lib/mockData';
 
 interface SidebarProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
-  onOpenSupabaseModal?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, onOpenSupabaseModal }) => {
-  const { profile, logout, switchDemoUser, isConfigured } = useAuth();
-  const [showSwitchMenu, setShowSwitchMenu] = useState(false);
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => {
+  const { profile, logout } = useAuth();
 
   const navItems = [
     { id: 'inicio', label: 'Inicio', icon: Home },
@@ -63,31 +60,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, onOpe
         </nav>
       </div>
 
-      {/* Parte inferior: Indicador Supabase y Usuario activo */}
+      {/* Parte inferior: Usuario activo */}
       <div className="p-4 border-t border-slate-100 space-y-3">
-        {/* Badge de estado Supabase */}
-        <button
-          onClick={onOpenSupabaseModal}
-          className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors"
-          title="Ver estado de conexión con Supabase"
-        >
-          <div className="flex items-center gap-2 text-slate-600">
-            <Database className="w-3.5 h-3.5 text-[#10B981]" />
-            <span className="font-medium">Supabase Backend</span>
-          </div>
-          <span
-            className={`w-2 h-2 rounded-full ${
-              isConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-400'
-            }`}
-          />
-        </button>
-
         {/* Perfil del usuario activo */}
         <div className="relative">
-          <div
-            onClick={() => setShowSwitchMenu(!showSwitchMenu)}
-            className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors"
-          >
+          <div className="flex items-center gap-3 p-2 rounded-xl">
             <div className="w-10 h-10 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
               {getInitials(profile?.nombre)}
             </div>
@@ -99,48 +76,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, onOpe
                 {profile?.rol || 'Deportista'}
               </p>
             </div>
-            <span title="Cambiar usuario">
-              <RefreshCw className="w-3.5 h-3.5 text-slate-400 hover:text-slate-600" />
-            </span>
           </div>
-
-          {/* Menú desplegable para alternar rol / usuario de prueba */}
-          {showSwitchMenu && (
-            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-slate-200 rounded-xl shadow-lg p-2 text-xs z-50">
-              <p className="font-semibold text-slate-500 px-2 py-1 uppercase text-[10px] tracking-wider">
-                Cambiar de rol / perfil:
-              </p>
-              {INITIAL_PROFILES.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    switchDemoUser(p.id);
-                    setShowSwitchMenu(false);
-                  }}
-                  className={`w-full text-left px-2 py-1.5 rounded-lg flex items-center justify-between transition-colors ${
-                    profile?.id === p.id ? 'bg-blue-50 text-[#1E3A8A] font-semibold' : 'hover:bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <span className="truncate">{p.nombre}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 capitalize">
-                    {p.rol}
-                  </span>
-                </button>
-              ))}
-              <div className="border-t border-slate-100 mt-2 pt-1">
-                <button
-                  onClick={() => {
-                    logout();
-                    setShowSwitchMenu(false);
-                  }}
-                  className="w-full text-left px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Cerrar sesión</span>
-                </button>
-              </div>
-            </div>
-          )}
+          <button
+            onClick={logout}
+            className="w-full text-left px-2 py-1.5 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 text-xs"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Cerrar sesión</span>
+          </button>
         </div>
       </div>
     </aside>

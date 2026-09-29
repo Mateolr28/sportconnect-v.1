@@ -38,11 +38,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
     }
   };
 
-  const fillQuickDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('deporte2026!');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1128] via-[#0d1b3e] to-[#040817] flex items-center justify-center p-4">
       {/* Tarjeta Blanca Centrada */}
@@ -126,26 +121,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({
           Crear cuenta
         </button>
 
-        {/* Cuentas de demostración rápida */}
-        <div className="pt-2 text-center">
-          <p className="text-[11px] text-slate-400 mb-1.5">Accesos de demostración rápida:</p>
-          <div className="flex items-center justify-center gap-2">
-            <button
-              type="button"
-              onClick={() => fillQuickDemo('carlos.martinez@sportconnect.dev')}
-              className="text-[11px] text-[#1E3A8A] bg-blue-50 hover:bg-blue-100 font-semibold px-2.5 py-1 rounded-lg transition-colors"
-            >
-              Carlos (Deportista)
-            </button>
-            <button
-              type="button"
-              onClick={() => fillQuickDemo('scout.fcb@sportconnect.dev')}
-              className="text-[11px] text-[#10B981] bg-emerald-50 hover:bg-emerald-100 font-semibold px-2.5 py-1 rounded-lg transition-colors"
-            >
-              Barça (Reclutador)
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

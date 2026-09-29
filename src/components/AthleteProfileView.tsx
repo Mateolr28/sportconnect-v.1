@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Calendar, Edit3, Trophy, Play, MessageCircle } from 'lucide-react';
+import { MapPin, Edit3, Trophy, Play, MessageCircle, Trash2 } from 'lucide-react';
 import { Profile, AthleteProfile, Post } from '../types';
 import { VideoPlayer } from './VideoPlayer';
 
@@ -10,6 +10,7 @@ interface AthleteProfileViewProps {
   isOwnProfile: boolean;
   onEditProfile?: () => void;
   onContactAthlete?: (profile: Profile) => void;
+  onDeletePost?: (post: Post) => Promise<void>;
 }
 
 export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
@@ -19,8 +20,10 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
   isOwnProfile,
   onEditProfile,
   onContactAthlete,
+  onDeletePost,
 }) => {
   const [selectedVideo, setSelectedVideo] = useState<Post | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
 
   const initials = profile.nombre
     .split(' ')
@@ -54,10 +57,6 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     {profile.ubicacion || 'Madrid, España'}
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    Enero 2024
                   </span>
                 </div>
               </div>
@@ -170,11 +169,13 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
             {posts.map((post) => (
               <div
                 key={post.id}
-                onClick={() => setSelectedVideo(post)}
                 className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md cursor-pointer transition-all group"
               >
                 {/* Thumbnail con botón Play y duración */}
-                <div className="relative aspect-[16/10] bg-slate-900 overflow-hidden">
+                <div
+                  onClick={() => setSelectedVideo(post)}
+                  className="relative aspect-[16/10] bg-slate-900 overflow-hidden"
+                >
                   <img
                     src={post.thumbnail_url || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600&auto=format&fit=crop&q=80'}
                     alt={post.titulo || 'Video'}
@@ -192,9 +193,35 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
 
                 {/* Título y descripción */}
                 <div className="p-3.5">
-                  <h3 className="font-bold text-sm text-slate-900 truncate">
-                    {post.titulo || post.descripcion}
-                  </h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-bold text-sm text-slate-900 truncate">
+                      {post.titulo || post.descripcion}
+                    </h3>
+                    {isOwnProfile && onDeletePost && (
+                      <button
+                        type="button"
+                        onClick={async (event) => {
+                          event.stopPropagation();
+                          if (!window.confirm('¿Quieres eliminar este video? Esta acción no se puede deshacer.')) return;
+
+                          setDeletingPostId(post.id);
+                          try {
+                            await onDeletePost(post);
+                          } catch (error) {
+                            window.alert(error instanceof Error ? error.message : 'No se pudo eliminar el video.');
+                          } finally {
+                            setDeletingPostId(null);
+                          }
+                        }}
+                        disabled={deletingPostId === post.id}
+                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                        title="Eliminar mi video"
+                        aria-label="Eliminar mi video"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between text-xs text-slate-500 mt-2">
                     <span className="text-[#10B981] font-semibold">{post.deporte}</span>
                     <span>{post.likes_count} likes</span>

@@ -17,16 +17,6 @@ export const requireAuth = async (
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    // Si estamos en desarrollo sin configurar, permitimos modo demo
-    if (!isServerSupabaseConfigured()) {
-      req.user = {
-        id: (req.headers['x-user-id'] as string) || 'a1111111-1111-4111-a111-111111111111',
-        email: 'carlos.martinez@sportconnect.dev',
-        role: 'authenticated',
-      };
-      return next();
-    }
-
     res.status(401).json({ error: 'Encabezado de autorización ausente o inválido' });
     return;
   }
@@ -49,12 +39,7 @@ export const requireAuth = async (
       };
       next();
     } else {
-      req.user = {
-        id: (req.headers['x-user-id'] as string) || 'a1111111-1111-4111-a111-111111111111',
-        email: 'carlos.martinez@sportconnect.dev',
-        role: 'authenticated',
-      };
-      next();
+      res.status(503).json({ error: 'Supabase no está configurado' });
     }
   } catch (err) {
     res.status(500).json({ error: 'Fallo al autenticar la petición' });
