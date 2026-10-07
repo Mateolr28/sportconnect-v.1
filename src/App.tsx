@@ -5,12 +5,13 @@ import { FeedPage } from './pages/FeedPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { UploadPage } from './pages/UploadPage';
 import { MessagesPage } from './pages/MessagesPage';
+import { SearchPage } from './pages/SearchPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SupabaseInfoModal } from './components/SupabaseInfoModal';
 import { supabaseService } from './services/supabaseService';
 import { Profile } from './types';
-import { Home, User, Upload, MessageCircle } from 'lucide-react';
+import { Home, User, Upload, MessageCircle, Search } from 'lucide-react';
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
@@ -94,6 +95,13 @@ function AppContent() {
           />
         )}
 
+        {currentTab === 'descubrir' && (
+          <SearchPage
+            onViewProfile={handleViewProfile}
+            onContactAthlete={handleContactAthlete}
+          />
+        )}
+
         {currentTab === 'perfil' && (
           <ProfilePage
             viewingUserId={viewingUserId}
@@ -119,6 +127,7 @@ function AppContent() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around py-2.5 z-40 shadow-lg">
         {[
           { id: 'inicio', label: 'Inicio', icon: Home },
+          { id: 'descubrir', label: 'Descubrir', icon: Search },
           { id: 'perfil', label: 'Perfil', icon: User },
           { id: 'subir', label: 'Subir', icon: Upload },
           { id: 'mensajes', label: 'Mensajes', icon: MessageCircle },

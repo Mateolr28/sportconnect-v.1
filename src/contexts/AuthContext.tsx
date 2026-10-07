@@ -11,11 +11,19 @@ interface AuthContextType {
   isConfigured: boolean;
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
   register: (data: {
-    nombre: string;
+    primer_nombre: string;
+    segundo_nombre?: string;
+    primer_apellido: string;
+    segundo_apellido?: string;
     email: string;
     password: string;
     rol: UserRole;
-    ubicacion?: string;
+    pais_nacimiento: string;
+    region_nacimiento: string;
+    ciudad_nacimiento: string;
+    edad?: number;
+    disciplina?: string;
+    posicion?: string;
   }) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<Profile>) => Promise<void>;
@@ -139,18 +147,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Registro con Supabase Auth
   const register = async ({
-    nombre,
+    primer_nombre,
+    segundo_nombre,
+    primer_apellido,
+    segundo_apellido,
     email,
     password,
     rol,
-    ubicacion = 'Madrid, España',
+    pais_nacimiento,
+    region_nacimiento,
+    ciudad_nacimiento,
+    edad,
+    disciplina = 'Fútbol',
+    posicion = 'Delantero',
   }: {
-    nombre: string;
+    primer_nombre: string;
+    segundo_nombre?: string;
+    primer_apellido: string;
+    segundo_apellido?: string;
     email: string;
     password: string;
     rol: UserRole;
-    ubicacion?: string;
+    pais_nacimiento: string;
+    region_nacimiento: string;
+    ciudad_nacimiento: string;
+    edad?: number;
+    disciplina?: string;
+    posicion?: string;
   }) => {
+    const nombre = [primer_nombre, segundo_nombre, primer_apellido, segundo_apellido]
+      .filter(Boolean)
+      .join(' ');
+    const ubicacion = `${ciudad_nacimiento}, ${region_nacimiento}, ${pais_nacimiento}`;
+
     if (configured) {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -158,8 +187,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: {
             nombre,
+            primer_nombre,
+            segundo_nombre,
+            primer_apellido,
+            segundo_apellido,
             rol,
             ubicacion,
+            pais_nacimiento,
+            region_nacimiento,
+            ciudad_nacimiento,
+            edad,
+            disciplina,
+            posicion,
           },
         },
       });
@@ -184,14 +223,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email,
           rol,
           ubicacion,
+          primer_nombre,
+          segundo_nombre,
+          primer_apellido,
+          segundo_apellido,
+          pais_nacimiento,
+          region_nacimiento,
+          ciudad_nacimiento,
         });
 
         if (rol === 'deportista') {
           await supabase.from('athlete_profiles').upsert({
             user_id: data.user.id,
-            disciplina: 'Fútbol',
-            posicion: 'Delantero',
-            edad: 20,
+            disciplina,
+            posicion,
+            edad: edad || 20,
             partidos: 0,
             goles: 0,
             asistencias: 0,

@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { countries, getCities, getCountryByName, getRegions } from '../data/locationOptions';
+
+const commonSports = [
+  'Fútbol',
+  'Baloncesto',
+  'Tenis',
+  'Atletismo',
+  'Natación',
+  'Ciclismo',
+  'Voleibol',
+  'Béisbol',
+  'Boxeo',
+  'Gimnasia',
+  'Rugby',
+  'Hockey',
+];
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -11,16 +27,34 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const { profile, athleteProfile, recruiterProfile, updateProfile, updateAthleteProfile, updateRecruiterProfile } = useAuth();
 
   const [nombre, setNombre] = useState(profile?.nombre || '');
+  const [primerNombre, setPrimerNombre] = useState(profile?.primer_nombre || '');
+  const [segundoNombre, setSegundoNombre] = useState(profile?.segundo_nombre || '');
+  const [primerApellido, setPrimerApellido] = useState(profile?.primer_apellido || '');
+  const [segundoApellido, setSegundoApellido] = useState(profile?.segundo_apellido || '');
+  const [paisNacimiento, setPaisNacimiento] = useState(profile?.pais_nacimiento || '');
+  const [regionNacimiento, setRegionNacimiento] = useState(profile?.region_nacimiento || '');
+  const [ciudadNacimiento, setCiudadNacimiento] = useState(profile?.ciudad_nacimiento || '');
   const [ubicacion, setUbicacion] = useState(profile?.ubicacion || '');
   const [bio, setBio] = useState(profile?.bio || '');
 
   // Campos de atleta
   const [disciplina, setDisciplina] = useState(athleteProfile?.disciplina || 'Fútbol');
+  const [deportePersonalizado, setDeportePersonalizado] = useState(
+    athleteProfile?.disciplina && !commonSports.includes(athleteProfile.disciplina)
+      ? athleteProfile.disciplina
+      : ''
+  );
   const [posicion, setPosicion] = useState(athleteProfile?.posicion || 'Delantero');
   const [edad, setEdad] = useState(athleteProfile?.edad || 22);
   const [partidos, setPartidos] = useState(athleteProfile?.partidos || 120);
   const [goles, setGoles] = useState(athleteProfile?.goles || 85);
   const [asistencias, setAsistencias] = useState(athleteProfile?.asistencias || 42);
+  const [genero, setGenero] = useState<'masculino' | 'femenino' | 'no_especificado' | ''>(athleteProfile?.genero || '');
+  const [nivelDeportivo, setNivelDeportivo] = useState<'amateur' | 'formativo' | 'semiprofesional' | 'profesional' | 'elite' | ''>(athleteProfile?.nivel_deportivo || '');
+  const [disponibilidad, setDisponibilidad] = useState<'disponible' | 'buscando_equipo' | 'pruebas' | 'contrato_vigente' | 'no_disponible' | ''>(athleteProfile?.disponibilidad || '');
+  const [clubActual, setClubActual] = useState(athleteProfile?.club_actual || '');
+  const [academia, setAcademia] = useState(athleteProfile?.academia || '');
+  const [experienciaAnios, setExperienciaAnios] = useState(athleteProfile?.experiencia_anios || 0);
 
   // Campos de reclutador
   const [nombreClub, setNombreClub] = useState(recruiterProfile?.nombre_club || '');
@@ -29,6 +63,12 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [scoutsActivos, setScoutsActivos] = useState(recruiterProfile?.scouts_activos || 8);
 
   const [isSaving, setIsSaving] = useState(false);
+  const selectedCountry = getCountryByName(paisNacimiento);
+  const availableRegions = selectedCountry ? getRegions(selectedCountry.code) : [];
+  const selectedRegion = availableRegions.find((region) => region.name === regionNacimiento);
+  const availableCities = selectedCountry && selectedRegion
+    ? getCities(selectedCountry.code, selectedRegion.code)
+    : [];
 
   if (!isOpen || !profile) return null;
 
@@ -39,18 +79,31 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
     try {
       await updateProfile({
         nombre,
+        primer_nombre: primerNombre,
+        segundo_nombre: segundoNombre || undefined,
+        primer_apellido: primerApellido,
+        segundo_apellido: segundoApellido || undefined,
+        pais_nacimiento: paisNacimiento,
+        region_nacimiento: regionNacimiento,
+        ciudad_nacimiento: ciudadNacimiento,
         ubicacion,
         bio,
       });
 
       if (profile.rol === 'deportista') {
         await updateAthleteProfile({
-          disciplina,
+          disciplina: disciplina === 'Otro' ? deportePersonalizado : disciplina,
           posicion,
           edad: Number(edad),
           partidos: Number(partidos),
           goles: Number(goles),
           asistencias: Number(asistencias),
+          genero: genero || undefined,
+          nivel_deportivo: nivelDeportivo || undefined,
+          disponibilidad: disponibilidad || undefined,
+          club_actual: clubActual || undefined,
+          academia: academia || undefined,
+          experiencia_anios: Number(experienciaAnios),
         });
       } else {
         await updateRecruiterProfile({
@@ -97,6 +150,30 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
             />
           </div>
 
+          {profile.rol === 'deportista' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input type="text" required placeholder="Primer nombre" value={primerNombre} onChange={(e) => setPrimerNombre(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              <input type="text" placeholder="Segundo nombre (opcional)" value={segundoNombre} onChange={(e) => setSegundoNombre(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              <input type="text" required placeholder="Primer apellido" value={primerApellido} onChange={(e) => setPrimerApellido(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              <input type="text" placeholder="Segundo apellido (opcional)" value={segundoApellido} onChange={(e) => setSegundoApellido(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <select required value={paisNacimiento} onChange={(e) => { setPaisNacimiento(e.target.value); setRegionNacimiento(''); setCiudadNacimiento(''); }} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+              <option value="" disabled>Selecciona un país</option>
+              {countries.map((country) => <option key={country.code} value={country.name}>{country.name}</option>)}
+            </select>
+            <select required value={regionNacimiento} disabled={!paisNacimiento} onChange={(e) => { setRegionNacimiento(e.target.value); setCiudadNacimiento(''); }} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:opacity-50">
+              <option value="" disabled>Selecciona una región</option>
+              {availableRegions.map((region) => <option key={region.code} value={region.name}>{region.name}</option>)}
+            </select>
+            <select required value={ciudadNacimiento} disabled={!regionNacimiento} onChange={(e) => setCiudadNacimiento(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm disabled:opacity-50">
+              <option value="" disabled>Selecciona una ciudad</option>
+              {availableCities.map((city) => <option key={city.code} value={city.name}>{city.name}</option>)}
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
               Ubicación
@@ -131,12 +208,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <span className="text-[11px] text-slate-500 block mb-1">Deporte</span>
-                  <input
-                    type="text"
-                    value={disciplina}
-                    onChange={(e) => setDisciplina(e.target.value)}
+                  <select
+                    value={commonSports.includes(disciplina) ? disciplina : 'Otro'}
+                    onChange={(e) => setDisciplina(e.target.value === 'Otro' ? 'Otro' : e.target.value)}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                  />
+                  >
+                    {commonSports.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
+                    <option value="Otro">Otro</option>
+                  </select>
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-500 block mb-1">Posición</span>
@@ -157,6 +236,47 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                   />
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <select value={genero} onChange={(e) => setGenero(e.target.value as typeof genero)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                  <option value="">Género</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="no_especificado">No especificado</option>
+                </select>
+                <select value={nivelDeportivo} onChange={(e) => setNivelDeportivo(e.target.value as typeof nivelDeportivo)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                  <option value="">Nivel deportivo</option>
+                  <option value="amateur">Amateur</option>
+                  <option value="formativo">Formativo</option>
+                  <option value="semiprofesional">Semiprofesional</option>
+                  <option value="profesional">Profesional</option>
+                  <option value="elite">Élite</option>
+                </select>
+                <select value={disponibilidad} onChange={(e) => setDisponibilidad(e.target.value as typeof disponibilidad)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                  <option value="">Disponibilidad</option>
+                  <option value="disponible">Disponible</option>
+                  <option value="buscando_equipo">Buscando equipo</option>
+                  <option value="pruebas">Disponible para pruebas</option>
+                  <option value="contrato_vigente">Contrato vigente</option>
+                  <option value="no_disponible">No disponible</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input type="text" placeholder="Club actual" value={clubActual} onChange={(e) => setClubActual(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
+                <input type="text" placeholder="Academia" value={academia} onChange={(e) => setAcademia(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
+                <input type="number" min="0" placeholder="Años de experiencia" value={experienciaAnios} onChange={(e) => setExperienciaAnios(Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
+              </div>
+              {(!commonSports.includes(disciplina) || disciplina === 'Otro') && (
+                <input
+                  type="text"
+                  required
+                  placeholder="Escribe tu deporte"
+                  value={deportePersonalizado}
+                  onChange={(e) => setDeportePersonalizado(e.target.value)}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                />
+              )}
 
               <div className="grid grid-cols-3 gap-3">
                 <div>

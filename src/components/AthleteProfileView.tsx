@@ -58,6 +58,11 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                     <MapPin className="w-3.5 h-3.5 text-slate-400" />
                     {profile.ubicacion || 'Madrid, España'}
                   </span>
+                  {(profile.ciudad_nacimiento || profile.region_nacimiento || profile.pais_nacimiento) && (
+                    <span>
+                      Nacimiento: {[profile.ciudad_nacimiento, profile.region_nacimiento, profile.pais_nacimiento].filter(Boolean).join(', ')}
+                    </span>
+                  )}
                 </div>
               </div>
 

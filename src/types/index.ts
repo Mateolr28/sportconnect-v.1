@@ -9,6 +9,13 @@ export interface Profile {
   nombre: string;
   email: string;
   rol: UserRole;
+  primer_nombre?: string;
+  segundo_nombre?: string;
+  primer_apellido?: string;
+  segundo_apellido?: string;
+  pais_nacimiento?: string;
+  region_nacimiento?: string;
+  ciudad_nacimiento?: string;
   ubicacion?: string;
   avatar_url?: string;
   bio?: string;
@@ -27,8 +34,19 @@ export interface AthleteProfile {
   goles: number;
   asistencias: number;
   logros: string[];
+  genero?: 'masculino' | 'femenino' | 'no_especificado';
+  nivel_deportivo?: 'amateur' | 'formativo' | 'semiprofesional' | 'profesional' | 'elite';
+  disponibilidad?: 'disponible' | 'buscando_equipo' | 'pruebas' | 'contrato_vigente' | 'no_disponible';
+  club_actual?: string;
+  academia?: string;
+  experiencia_anios?: number;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface AthleteSearchResult {
+  profile: Profile;
+  athlete: AthleteProfile;
 }
 
 export interface RecruiterProfile {

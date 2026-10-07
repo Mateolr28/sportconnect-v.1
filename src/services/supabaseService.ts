@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Post, Comment, Chat, Message, Profile, AthleteProfile, RecruiterProfile, FeedFilters } from '../types';
+import { Post, Comment, Chat, Message, Profile, AthleteProfile, RecruiterProfile, FeedFilters, AthleteSearchResult } from '../types';
 
 // Estado local reactivo cuando opera en modo offline / pre-configuración
 let localPosts: Post[] = [];
@@ -7,6 +7,25 @@ let localChats: Chat[] = [];
 let localMessages: Record<string, Message[]> = {};
 
 export const supabaseService = {
+  async searchAthletes(): Promise<AthleteSearchResult[]> {
+    if (!isSupabaseConfigured()) return [];
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*, athlete:athlete_profiles(*)')
+      .eq('rol', 'deportista')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return ((data as any[]) || [])
+      .map((row) => ({
+        profile: row as Profile,
+        athlete: Array.isArray(row.athlete) ? row.athlete[0] : row.athlete,
+      }))
+      .filter((result) => result.athlete) as AthleteSearchResult[];
+  },
+
   // --------------------------------------------------------------------------
   // 1. PUBLICACIONES (POSTS)
   // --------------------------------------------------------------------------

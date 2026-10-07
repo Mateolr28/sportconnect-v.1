@@ -52,6 +52,11 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
                     <MapPin className="w-3.5 h-3.5" />
                     {profile.ubicacion || 'Barcelona, España'}
                   </span>
+                  {(profile.ciudad_nacimiento || profile.region_nacimiento || profile.pais_nacimiento) && (
+                    <span>
+                      Nacimiento: {[profile.ciudad_nacimiento, profile.region_nacimiento, profile.pais_nacimiento].filter(Boolean).join(', ')}
+                    </span>
+                  )}
                 </div>
               </div>
 

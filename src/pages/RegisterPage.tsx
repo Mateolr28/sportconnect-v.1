@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import { Dumbbell, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types';
+import { countries, getCities, getCountryByName, getRegions } from '../data/locationOptions';
+
+const commonSports = [
+  'Fútbol',
+  'Baloncesto',
+  'Tenis',
+  'Atletismo',
+  'Natación',
+  'Ciclismo',
+  'Voleibol',
+  'Béisbol',
+  'Boxeo',
+  'Gimnasia',
+  'Rugby',
+  'Hockey',
+];
 
 interface RegisterPageProps {
   onNavigateToLogin: () => void;
@@ -13,16 +29,41 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   onRegisterSuccess,
 }) => {
   const { register } = useAuth();
-  const [nombre, setNombre] = useState('');
+  const [primerNombre, setPrimerNombre] = useState('');
+  const [segundoNombre, setSegundoNombre] = useState('');
+  const [primerApellido, setPrimerApellido] = useState('');
+  const [segundoApellido, setSegundoApellido] = useState('');
+  const [paisNacimiento, setPaisNacimiento] = useState('');
+  const [regionNacimiento, setRegionNacimiento] = useState('');
+  const [ciudadNacimiento, setCiudadNacimiento] = useState('');
+  const [edad, setEdad] = useState('');
+  const [disciplina, setDisciplina] = useState('');
+  const [deportePersonalizado, setDeportePersonalizado] = useState('');
+  const [posicion, setPosicion] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rol, setRol] = useState<UserRole>('deportista');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const selectedCountry = getCountryByName(paisNacimiento);
+  const availableRegions = selectedCountry ? getRegions(selectedCountry.code) : [];
+  const selectedRegion = availableRegions.find((region) => region.name === regionNacimiento);
+  const availableCities = selectedCountry && selectedRegion
+    ? getCities(selectedCountry.code, selectedRegion.code)
+    : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim() || !email.trim() || !password) {
+    if (
+      !primerNombre.trim() ||
+      !primerApellido.trim() ||
+      !paisNacimiento.trim() ||
+      !regionNacimiento.trim() ||
+      !ciudadNacimiento.trim() ||
+      !email.trim() ||
+      !password ||
+      (rol === 'deportista' && (!edad || (!disciplina.trim() && !deportePersonalizado.trim()) || !posicion.trim()))
+    ) {
       setErrorMsg('Por favor completa todos los campos.');
       return;
     }
@@ -32,14 +73,29 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       return;
     }
 
+    const edadNumero = Number(edad);
+    if (rol === 'deportista' && (!Number.isInteger(edadNumero) || edadNumero < 10 || edadNumero > 50)) {
+      setErrorMsg('La edad debe estar entre 10 y 50 años.');
+      return;
+    }
+
     setIsLoading(true);
     setErrorMsg(null);
 
     const { error } = await register({
-      nombre: nombre.trim(),
+      primer_nombre: primerNombre.trim(),
+      segundo_nombre: segundoNombre.trim() || undefined,
+      primer_apellido: primerApellido.trim(),
+      segundo_apellido: segundoApellido.trim() || undefined,
       email: email.trim(),
       password,
       rol,
+      pais_nacimiento: paisNacimiento.trim(),
+      region_nacimiento: regionNacimiento.trim(),
+      ciudad_nacimiento: ciudadNacimiento.trim(),
+      edad: rol === 'deportista' ? edadNumero : undefined,
+      disciplina: (disciplina === 'Otro' ? deportePersonalizado : disciplina).trim(),
+      posicion: posicion.trim(),
     });
 
     setIsLoading(false);
@@ -54,7 +110,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0a1128] via-[#0d1b3e] to-[#040817] flex items-center justify-center p-4">
       {/* Tarjeta Blanca Centrada */}
-      <div className="bg-white rounded-3xl w-full max-w-sm p-8 shadow-2xl space-y-6">
+      <div className="bg-white rounded-3xl w-full max-w-2xl p-8 shadow-2xl space-y-6">
         {/* Logo */}
         <div className="text-center space-y-3">
           <div className="w-14 h-14 rounded-2xl bg-[#1E3A8A] text-white flex items-center justify-center mx-auto shadow-md">
@@ -77,18 +133,50 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
         {/* Formulario de Registro */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
-              Nombre completo
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="Tu nombre"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all"
-            />
+            <p className="text-xs font-bold text-slate-700 mb-2">Datos personales</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <input type="text" required placeholder="Primer nombre" value={primerNombre} onChange={(e) => setPrimerNombre(e.target.value)} className="form-input" />
+              <input type="text" placeholder="Segundo nombre (opcional)" value={segundoNombre} onChange={(e) => setSegundoNombre(e.target.value)} className="form-input" />
+              <input type="text" required placeholder="Primer apellido" value={primerApellido} onChange={(e) => setPrimerApellido(e.target.value)} className="form-input" />
+              <input type="text" placeholder="Segundo apellido (opcional)" value={segundoApellido} onChange={(e) => setSegundoApellido(e.target.value)} className="form-input" />
+            </div>
           </div>
+
+          <div>
+            <p className="text-xs font-bold text-slate-700 mb-2">Lugar de nacimiento</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <select required value={paisNacimiento} onChange={(e) => { setPaisNacimiento(e.target.value); setRegionNacimiento(''); setCiudadNacimiento(''); }} className="form-input">
+                <option value="" disabled>Selecciona un país</option>
+                {countries.map((country) => <option key={country.code} value={country.name}>{country.name}</option>)}
+              </select>
+              <select required value={regionNacimiento} disabled={!paisNacimiento} onChange={(e) => { setRegionNacimiento(e.target.value); setCiudadNacimiento(''); }} className="form-input disabled:opacity-50">
+                <option value="" disabled>Selecciona una región</option>
+                {availableRegions.map((region) => <option key={region.code} value={region.name}>{region.name}</option>)}
+              </select>
+              <select required value={ciudadNacimiento} disabled={!regionNacimiento} onChange={(e) => setCiudadNacimiento(e.target.value)} className="form-input disabled:opacity-50">
+                <option value="" disabled>Selecciona una ciudad</option>
+                {availableCities.map((city) => <option key={city.code} value={city.name}>{city.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {rol === 'deportista' && (
+            <div>
+              <p className="text-xs font-bold text-slate-700 mb-2">Perfil deportivo</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input type="number" required min="10" max="50" placeholder="Edad" value={edad} onChange={(e) => setEdad(e.target.value)} className="form-input" />
+                <select required value={disciplina} onChange={(e) => setDisciplina(e.target.value)} className="form-input">
+                  <option value="" disabled>Selecciona un deporte</option>
+                  {commonSports.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
+                  <option value="Otro">Otro</option>
+                </select>
+                <input type="text" required placeholder="Posición" value={posicion} onChange={(e) => setPosicion(e.target.value)} className="form-input" />
+              </div>
+              {disciplina === 'Otro' && (
+                <input type="text" required placeholder="Escribe tu deporte" value={deportePersonalizado} onChange={(e) => setDeportePersonalizado(e.target.value)} className="form-input mt-3" />
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1.5">Email</label>
