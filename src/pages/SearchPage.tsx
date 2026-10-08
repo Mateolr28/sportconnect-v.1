@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { AthleteSearchResult, Profile } from '../types';
 import { supabaseService } from '../services/supabaseService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SearchPageProps {
   onViewProfile: (userId: string) => void;
@@ -60,6 +61,7 @@ const initials = (name: string) => name.split(' ').map((part) => part[0]).slice(
 const normalize = (value?: string | number) => String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContactAthlete }) => {
+  const { profile: currentProfile } = useAuth();
   const [athletes, setAthletes] = useState<AthleteSearchResult[]>([]);
   const [query, setQuery] = useState('');
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
@@ -72,34 +74,64 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
 
   useEffect(() => {
     supabaseService.searchAthletes()
-      .then(setAthletes)
-      .catch(() => setErrorMessage('No pudimos cargar el directorio de deportistas.'))
+      .then((results) => setAthletes(results.filter(({ profile }) => profile.id !== currentProfile?.id)))
+      .catch((error: unknown) => {
+        setErrorMessage(error instanceof Error ? error.message : 'No pudimos cargar el directorio de deportistas.');
+      })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, [currentProfile?.id]);
 
   const allPositions = Array.from(new Set(draftFilters.sports.flatMap((sport) => positionsBySport[sport] || [])));
   const filteredAthletes = athletes.filter(({ profile, athlete }) => {
-    const searchable = normalize([profile.nombre, profile.ubicacion, profile.ciudad_nacimiento, athlete.disciplina, athlete.posicion, athlete.club_actual, athlete.academia].join(' '));
+    const searchable = normalize([
+      profile.nombre,
+      profile.primer_nombre,
+      profile.segundo_nombre,
+      profile.primer_apellido,
+      profile.segundo_apellido,
+      profile.ubicacion,
+      profile.pais_nacimiento,
+      profile.region_nacimiento,
+      profile.ciudad_nacimiento,
+      athlete.disciplina,
+      athlete.posicion,
+      athlete.club_actual,
+      athlete.academia,
+    ].join(' '));
     const normalizedQuery = normalize(query);
-    const age = athlete.edad;
+    const queryTerms = normalizedQuery.split(/\s+/).filter(Boolean);
+    const age = Number(athlete.edad);
     const minAge = filters.ageRange === 'under15' ? undefined : filters.ageRange === '15-17' ? 15 : filters.ageRange === '18-20' ? 18 : filters.ageRange === '21-23' ? 21 : filters.ageRange === '24-27' ? 24 : filters.ageRange === '28+' ? 28 : filters.ageRange === 'custom' && filters.minAge ? Number(filters.minAge) : undefined;
     const maxAge = filters.ageRange === 'under15' ? 14 : filters.ageRange === '15-17' ? 17 : filters.ageRange === '18-20' ? 20 : filters.ageRange === '21-23' ? 23 : filters.ageRange === '24-27' ? 27 : filters.ageRange === 'custom' && filters.maxAge ? Number(filters.maxAge) : undefined;
 
-    return (!normalizedQuery || searchable.includes(normalizedQuery))
-      && (!filters.sports.length || filters.sports.some((sport) => sport === 'Otros' ? !sports.slice(0, -1).some((item) => normalize(athlete.disciplina) === normalize(item)) : normalize(athlete.disciplina) === normalize(sport)))
+    return (!queryTerms.length || queryTerms.every((term) => searchable.includes(term)))
+      && (!filters.sports.length || filters.sports.some((sport) => sport === 'Otros'
+        ? !sports.slice(0, -1).some((item) => normalize(athlete.disciplina).includes(normalize(item)))
+        : normalize(athlete.disciplina).includes(normalize(sport))))
       && (!filters.positions.length || filters.positions.some((position) => normalize(athlete.posicion).includes(normalize(position))))
       && (minAge === undefined || age >= minAge)
       && (maxAge === undefined || age <= maxAge)
       && (!filters.location || normalize([profile.ubicacion, profile.pais_nacimiento, profile.region_nacimiento, profile.ciudad_nacimiento].join(' ')).includes(normalize(filters.location)))
-      && (!filters.gender || athlete.genero === filters.gender)
-      && (!filters.level || athlete.nivel_deportivo === filters.level)
-      && (!filters.availability || athlete.disponibilidad === filters.availability)
+      && (!filters.gender || normalize(athlete.genero) === normalize(filters.gender))
+      && (!filters.level || normalize(athlete.nivel_deportivo) === normalize(filters.level))
+      && (!filters.availability || normalize(athlete.disponibilidad) === normalize(filters.availability))
       && (!filters.club || normalize(athlete.club_actual).includes(normalize(filters.club)))
       && (!filters.academy || normalize(athlete.academia).includes(normalize(filters.academy)))
       && (!filters.experience || (athlete.experiencia_anios ?? 0) >= Number(filters.experience));
   });
 
-  const suggestions = query.trim() ? athletes.filter(({ profile, athlete }) => normalize([profile.nombre, athlete.disciplina, athlete.posicion, profile.ubicacion].join(' ')).includes(normalize(query))).slice(0, 5) : [];
+  const suggestions = query.trim()
+    ? athletes.filter(({ profile, athlete }) => normalize([
+      profile.nombre,
+      profile.primer_nombre,
+      profile.segundo_nombre,
+      profile.primer_apellido,
+      profile.segundo_apellido,
+      athlete.disciplina,
+      athlete.posicion,
+      profile.ubicacion,
+    ].join(' ')).includes(normalize(query))).slice(0, 5)
+    : [];
 
   const toggleDraftArray = (key: 'sports' | 'positions', value: string) => {
     setDraftFilters((current) => ({ ...current, [key]: current[key].includes(value) ? current[key].filter((item) => item !== value) : [...current[key], value] }));
@@ -174,7 +206,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
           </aside>
 
           <section className="flex-1 min-w-0 w-full"><div className="flex items-center justify-between gap-3 mb-5"><div><div className="flex items-center gap-2"><h2 className="text-xl font-black text-slate-900">Deportistas</h2>{activeFilterCount > 0 && <span className="bg-emerald-100 text-emerald-800 rounded-full px-2 py-0.5 text-[11px] font-bold">{activeFilterCount} activos</span>}</div><p className="text-xs text-slate-500 mt-1">{filteredAthletes.length} perfiles que coinciden con tu búsqueda</p></div><button onClick={() => setShowFilters(!showFilters)} className="lg:hidden flex items-center gap-2 border border-slate-200 bg-white rounded-xl px-3 py-2 text-xs font-semibold"><Filter className="w-4 h-4" /> Filtros</button></div>
-            {isLoading ? <div className="grid sm:grid-cols-2 gap-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-60 bg-white border border-slate-200 rounded-2xl animate-pulse" />)}</div> : errorMessage ? <div className="bg-white border border-red-200 rounded-2xl p-8 text-center text-sm text-red-700">{errorMessage}</div> : filteredAthletes.length === 0 ? <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center"><UserRound className="w-9 h-9 mx-auto text-slate-300" /><h3 className="font-bold text-slate-800 mt-3">No encontramos candidatos</h3><p className="text-xs text-slate-500 mt-1">Prueba quitando algún filtro o usando otra búsqueda.</p></div> : <div className="grid sm:grid-cols-2 gap-4">{filteredAthletes.map(({ profile, athlete }) => <AthleteCard key={profile.id} profile={profile} athlete={athlete} onViewProfile={onViewProfile} onContactAthlete={onContactAthlete} />)}</div>}
+            {isLoading ? <div className="grid sm:grid-cols-2 gap-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-60 bg-white border border-slate-200 rounded-2xl animate-pulse" />)}</div> : errorMessage ? <div className="bg-white border border-red-200 rounded-2xl p-8 text-center text-sm text-red-700">{errorMessage}</div> : filteredAthletes.length === 0 ? <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center"><UserRound className="w-9 h-9 mx-auto text-slate-300" /><h3 className="font-bold text-slate-800 mt-3">{athletes.length ? 'No encontramos candidatos' : 'No hay perfiles deportivos disponibles'}</h3><p className="text-xs text-slate-500 mt-1">{athletes.length ? 'Prueba quitando algún filtro o usando otra búsqueda.' : 'Crea una cuenta de deportista o aplica las migraciones de Supabase para cargar perfiles.'}</p></div> : <div className="grid sm:grid-cols-2 gap-4">{filteredAthletes.map(({ profile, athlete }) => <AthleteCard key={profile.id} profile={profile} athlete={athlete} onViewProfile={onViewProfile} onContactAthlete={onContactAthlete} />)}</div>}
           </section>
         </div>
       </main>

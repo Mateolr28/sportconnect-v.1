@@ -5,9 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 interface SidebarProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
+  unreadMessagesCount?: number;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, unreadMessagesCount = 0 }) => {
   const { profile, logout } = useAuth();
 
   const navItems = [
@@ -55,6 +56,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab }) => 
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-500'}`} />
                 <span>{item.label}</span>
+                {item.id === 'mensajes' && unreadMessagesCount > 0 && (
+                  <span className={`ml-auto min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    isActive ? 'bg-white text-[#1E3A8A]' : 'bg-red-500 text-white'
+                  }`}>
+                    {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
+                  </span>
+                )}
               </button>
             );
           })}

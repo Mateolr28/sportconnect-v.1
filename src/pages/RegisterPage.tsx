@@ -103,6 +103,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
     if (error) {
       setErrorMsg(error.message || 'Error al crear la cuenta en Supabase.');
     } else {
+      window.alert(`Cuenta creada correctamente. Ingresa al correo registrado (${email.trim()}) para confirmar tu cuenta.`);
       onRegisterSuccess();
     }
   };
