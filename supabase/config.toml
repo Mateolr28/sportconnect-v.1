@@ -25,7 +25,11 @@ jwt_expiry = 3600
 enable_signup = true
 
 [auth.email]
-enable_confirmations = false
+enable_confirmations = true
+
+[auth.email.template.confirmation]
+subject = "Confirma tu cuenta de SportConnect"
+content_path = "./supabase/templates/confirmation.html"
 
 [storage]
 enabled = true

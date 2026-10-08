@@ -34,7 +34,9 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
         <div className="p-8 md:p-10 flex flex-col md:flex-row items-start gap-6">
           {/* Logo del club / avatar corporativo */}
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-white text-[#1E3A8A] flex items-center justify-center shadow-lg flex-shrink-0">
-            <Building2 className="w-12 h-12" />
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={`Logo de ${profile.nombre}`} className="w-full h-full object-cover rounded-2xl" />
+            ) : <Building2 className="w-12 h-12" />}
           </div>
 
           {/* Información del club o reclutador */}

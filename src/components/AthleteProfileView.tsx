@@ -43,7 +43,9 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
         <div className="p-8 md:p-10 flex flex-col md:flex-row items-start gap-6">
           {/* Avatar cuadrado verde esmeralda */}
           <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-[#0d9488] text-white flex items-center justify-center font-bold text-3xl shadow-lg flex-shrink-0">
-            {initials}
+            {profile.avatar_url ? (
+              <img src={profile.avatar_url} alt={`Foto de ${profile.nombre}`} className="w-full h-full object-cover rounded-2xl" />
+            ) : initials}
           </div>
 
           {/* Información del deportista */}
