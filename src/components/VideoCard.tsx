@@ -133,14 +133,25 @@ export const VideoCard: React.FC<VideoCardProps> = ({
         </button>
       </div>
 
-      {/* 2. Reproductor de Video */}
+      {/* 2. Contenido multimedia */}
       <div className="px-4">
-        <VideoPlayer
-          src={post.video_url}
-          poster={post.thumbnail_url}
-          duration={post.duracion || '0:45'}
-          badgeText={badgeText}
-        />
+        {post.media_type === 'image' ? (
+          <div className="relative w-full aspect-[16/10] bg-slate-100 rounded-xl overflow-hidden shadow-sm">
+            <img src={post.video_url} alt={post.titulo || 'Imagen deportiva'} className="w-full h-full object-cover" />
+            <div className="absolute top-3 left-3">
+              <span className="bg-black/60 text-white text-xs font-medium px-2.5 py-1 rounded-full">
+                {badgeText}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <VideoPlayer
+            src={post.video_url}
+            poster={post.thumbnail_url}
+            duration={post.duracion || '0:45'}
+            badgeText={badgeText}
+          />
+        )}
       </div>
 
       {/* 3. Acciones de interacción: Likes, Comentarios, Compartir */}

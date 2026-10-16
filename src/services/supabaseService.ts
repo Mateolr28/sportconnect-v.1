@@ -114,6 +114,7 @@ export const supabaseService = {
   async createPost({
     user_id,
     video_url,
+    media_type = 'video',
     storage_path,
     titulo,
     descripcion,
@@ -130,6 +131,7 @@ export const supabaseService = {
           .insert({
             user_id,
             video_url,
+            media_type,
             storage_path,
             titulo: titulo || 'Nuevo video destacado',
             descripcion,
@@ -151,6 +153,7 @@ export const supabaseService = {
       id: 'post-' + Math.random().toString(36).substring(2, 9),
       user_id,
       video_url,
+      media_type,
       storage_path,
       thumbnail_url: thumbnail_url || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1000&auto=format&fit=crop&q=80',
       titulo: titulo || 'Nuevo video destacado',
@@ -585,6 +588,39 @@ export const supabaseService = {
       url: localUrl,
       path: `simulated/${userId}/${file.name}`,
       thumbnailUrl: options?.thumbnail ? URL.createObjectURL(options.thumbnail) : undefined,
+    };
+  },
+
+  async uploadImage(file: File, userId: string, onProgress?: (percent: number) => void): Promise<{ url: string; path: string }> {
+    if (isSupabaseConfigured()) {
+      try {
+        const fileExt = file.name.split('.').pop() || 'jpg';
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        onProgress?.(30);
+        const { error } = await supabase.storage.from('sports-videos').upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || 'image/jpeg',
+        });
+        if (error) throw error;
+
+        const { data } = supabase.storage.from('sports-videos').getPublicUrl(filePath);
+        onProgress?.(100);
+        return { url: data.publicUrl, path: filePath };
+      } catch (err) {
+        console.warn('Error subiendo imagen a Supabase Storage, usando blob local:', err);
+      }
+    }
+
+    for (let p = 10; p <= 100; p += 20) {
+      onProgress?.(p);
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    }
+    return {
+      url: URL.createObjectURL(file),
+      path: `simulated/${userId}/${file.name}`,
     };
   },
 

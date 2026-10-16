@@ -49,9 +49,9 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   );
   const [posicion, setPosicion] = useState(athleteProfile?.posicion || 'Delantero');
   const [edad, setEdad] = useState(athleteProfile?.edad || 22);
-  const [partidos, setPartidos] = useState(athleteProfile?.partidos || 120);
-  const [goles, setGoles] = useState(athleteProfile?.goles || 85);
-  const [asistencias, setAsistencias] = useState(athleteProfile?.asistencias || 42);
+  const [partidos, setPartidos] = useState(athleteProfile?.partidos ?? 0);
+  const [goles, setGoles] = useState(athleteProfile?.goles ?? 0);
+  const [asistencias, setAsistencias] = useState(athleteProfile?.asistencias ?? 0);
   const [genero, setGenero] = useState<'masculino' | 'femenino' | 'no_especificado' | ''>(athleteProfile?.genero || '');
   const [nivelDeportivo, setNivelDeportivo] = useState<'amateur' | 'formativo' | 'semiprofesional' | 'profesional' | 'elite' | ''>(athleteProfile?.nivel_deportivo || '');
   const [disponibilidad, setDisponibilidad] = useState<'disponible' | 'buscando_equipo' | 'pruebas' | 'contrato_vigente' | 'no_disponible' | ''>(athleteProfile?.disponibilidad || '');

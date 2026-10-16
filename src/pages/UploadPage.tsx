@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, CheckCircle2, AlertCircle, Film, Sparkles } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertCircle, Film, Image, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabaseService } from '../services/supabaseService';
 
@@ -56,7 +56,9 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mediaType, setMediaType] = useState<'video' | 'image'>('video');
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const [thumbnailPreviewUrl, setThumbnailPreviewUrl] = useState<string | null>(null);
   const [thumbnailBlob, setThumbnailBlob] = useState<Blob | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0);
@@ -90,26 +92,38 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
       return;
     }
 
-    // MP4/H.264 es el formato con soporte más consistente en navegadores.
-    const validExtensions = ['mp4'];
+    const isImage = file.type.startsWith('image/');
+    const validExtensions = isImage ? ['jpg', 'jpeg', 'png', 'webp'] : ['mp4'];
     const extension = file.name.split('.').pop()?.toLowerCase();
     if (!extension || !validExtensions.includes(extension)) {
-      setErrorMsg('Formato de video no válido. Sube un archivo MP4 para asegurar su reproducción.');
+      setErrorMsg(isImage
+        ? 'Formato de imagen no válido. Sube JPG, PNG o WEBP.'
+        : 'Formato de video no válido. Sube un archivo MP4 para asegurar su reproducción.');
       return;
     }
 
     const objectUrl = URL.createObjectURL(file);
-    setVideoPreviewUrl(objectUrl);
+    setSelectedFile(file);
+    setMediaType(isImage ? 'image' : 'video');
+    setVideoPreviewUrl(isImage ? null : objectUrl);
+    setImagePreviewUrl(isImage ? objectUrl : null);
+
+    if (isImage) {
+      setVideoDuration(0);
+      setThumbnailBlob(null);
+      setThumbnailPreviewUrl(null);
+      return;
+    }
 
     try {
       const metadata = await extractVideoMetadata(file);
-      setSelectedFile(file);
       setVideoDuration(metadata.duration);
       setThumbnailBlob(metadata.thumbnail);
       setThumbnailPreviewUrl(URL.createObjectURL(metadata.thumbnail));
     } catch (err: any) {
       setSelectedFile(null);
       setVideoPreviewUrl(null);
+      setImagePreviewUrl(null);
       setErrorMsg(err.message || 'No se pudo leer el video.');
     }
   };
@@ -131,17 +145,17 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedFile) {
-      setErrorMsg('Por favor selecciona o arrastra un video deportivo.');
+      setErrorMsg('Por favor selecciona o arrastra una foto o video deportivo.');
       return;
     }
 
     if (!descripcion.trim()) {
-      setErrorMsg('Por favor ingresa una descripción para tu video.');
+      setErrorMsg('Por favor ingresa una descripción para tu publicación.');
       return;
     }
 
     if (!profile) {
-      setErrorMsg('Debes estar autenticado para publicar videos.');
+      setErrorMsg('Debes estar autenticado para publicar.');
       return;
     }
 
@@ -150,24 +164,31 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
     setErrorMsg(null);
 
     try {
-      // 1. Subir a Supabase Storage
-      const { url, path, thumbnailUrl } = await supabaseService.uploadVideo(
-        selectedFile,
-        profile.id,
-        (progress) => setUploadProgress(progress),
-        { thumbnail: thumbnailBlob || undefined }
-      );
+      // 1. Subir el archivo a Supabase Storage
+      const uploadResult = mediaType === 'image'
+        ? await supabaseService.uploadImage(selectedFile, profile.id, (progress) => setUploadProgress(progress))
+        : await supabaseService.uploadVideo(
+            selectedFile,
+            profile.id,
+            (progress) => setUploadProgress(progress),
+            { thumbnail: thumbnailBlob || undefined }
+          );
+      const { url, path } = uploadResult;
+      const thumbnailUrl = 'thumbnailUrl' in uploadResult && typeof uploadResult.thumbnailUrl === 'string'
+        ? uploadResult.thumbnailUrl
+        : undefined;
 
       // 2. Crear post en la base de datos
       await supabaseService.createPost({
         user_id: profile.id,
         video_url: url,
+        media_type: mediaType,
         storage_path: path,
         titulo: descripcion.slice(0, 40),
         descripcion: descripcion.trim(),
         deporte,
-        duracion: formatDuration(videoDuration),
-        thumbnail_url: thumbnailUrl || thumbnailPreviewUrl || undefined,
+        duracion: mediaType === 'video' ? formatDuration(videoDuration) : undefined,
+        thumbnail_url: mediaType === 'video' ? thumbnailUrl || thumbnailPreviewUrl || undefined : undefined,
         autor: profile,
         athlete_info: {
           posicion: athleteProfile?.posicion || 'Delantero',
@@ -175,7 +196,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
         },
       });
 
-      setSuccessMsg('¡Video publicado exitosamente en SportConnect!');
+      setSuccessMsg(`¡${mediaType === 'image' ? 'Foto' : 'Video'} publicado exitosamente en SportConnect!`);
       setTimeout(() => {
         onPostCreated();
       }, 1200);
@@ -192,7 +213,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
         {/* Encabezado */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-            Subir video
+            Crear publicación
           </h1>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
             Comparte tus mejores momentos deportivos con reclutadores
@@ -218,7 +239,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Zona de Drag & Drop con borde punteado */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-800">Video</label>
+            <label className="block text-xs font-bold text-slate-800">Foto o video</label>
             <div
               onDragOver={(e) => {
                 e.preventDefault();
@@ -236,15 +257,19 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="video/mp4"
+                accept="video/mp4,image/jpeg,image/png,image/webp"
                 onChange={handleSelectFile}
                 className="hidden"
               />
 
-              {videoPreviewUrl ? (
+              {videoPreviewUrl || imagePreviewUrl ? (
                 <div className="space-y-3">
                   <div className="w-full max-w-sm mx-auto aspect-video rounded-xl overflow-hidden bg-black shadow-sm">
-                    <video src={videoPreviewUrl} controls className="w-full h-full object-contain" />
+                    {mediaType === 'image' ? (
+                      <img src={imagePreviewUrl || undefined} alt="Vista previa" className="w-full h-full object-contain" />
+                    ) : (
+                      <video src={videoPreviewUrl || undefined} controls className="w-full h-full object-contain" />
+                    )}
                   </div>
                   <p className="text-xs font-semibold text-slate-800">{selectedFile?.name}</p>
                   <p className="text-[11px] text-[#10B981] font-medium">
@@ -258,11 +283,11 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
                     <UploadCloud className="w-7 h-7" />
                   </div>
                   <div>
-                    <p className="text-base font-bold text-slate-900">Arrastra tu video aquí</p>
+                    <p className="text-base font-bold text-slate-900">Arrastra tu foto o video aquí</p>
                     <p className="text-xs text-slate-500 mt-0.5">o haz clic para seleccionar un archivo</p>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Formato soportado: MP4 • Máximo 500MB
+                    Formatos soportados: MP4, JPG, PNG y WEBP • Máximo 500MB
                   </p>
                 </div>
               )}
@@ -273,7 +298,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
           {isUploading && (
             <div className="space-y-1.5 bg-white p-4 rounded-xl border border-slate-200">
               <div className="flex justify-between text-xs font-semibold text-slate-700">
-                <span>Subiendo video a Supabase Storage...</span>
+                <span>Subiendo archivo a Supabase Storage...</span>
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -317,20 +342,20 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
             </div>
           </div>
 
-          {/* Caja: Consejos para un mejor video */}
+          {/* Caja: Consejos para una mejor publicación */}
           <div className="bg-emerald-50/60 border border-emerald-200/80 rounded-2xl p-5 space-y-2.5">
             <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-[#10B981]" />
-              Consejos para un mejor video
+              Consejos para una mejor publicación
             </h3>
             <ul className="space-y-2 text-xs text-slate-700">
               <li className="flex items-center gap-2">
                 <span className="text-[#10B981] font-bold">✓</span>
-                Graba en buena calidad con buena iluminación
+                Usa fotos o videos con buena calidad e iluminación
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-[#10B981] font-bold">✓</span>
-                Destaca tus mejores jugadas en los primeros 15 segundos
+                Muestra tus mejores jugadas y momentos deportivos
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-[#10B981] font-bold">✓</span>
@@ -349,8 +374,8 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
             disabled={isUploading}
             className="w-full bg-[#1E3A8A] hover:bg-blue-900 active:scale-[0.99] text-white font-bold py-3.5 px-6 rounded-xl text-sm transition-all shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <Film className="w-4 h-4" />
-            <span>{isUploading ? 'Procesando y publicando...' : 'Publicar video'}</span>
+            {mediaType === 'image' ? <Image className="w-4 h-4" /> : <Film className="w-4 h-4" />}
+            <span>{isUploading ? 'Procesando y publicando...' : 'Publicar'}</span>
           </button>
         </form>
       </div>

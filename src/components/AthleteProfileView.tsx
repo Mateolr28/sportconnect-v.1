@@ -32,9 +32,7 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
     .join('')
     .toUpperCase();
 
-  const achievements = athlete?.logros && athlete.logros.length > 0
-    ? athlete.logros
-    : ['Campeón regional Sub-20', 'Máximo goleador 2023', 'Mejor jugador joven del torneo'];
+  const achievements = athlete?.logros || [];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -115,19 +113,19 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
             <div className="grid grid-cols-3 gap-4 pt-4 max-w-lg">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
-                  {athlete?.partidos || 120}+
+                  {athlete?.partidos ?? 0}+
                 </span>
                 <span className="text-xs text-slate-400 font-medium">Partidos</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
-                  {athlete?.goles || 85}
+                  {athlete?.goles ?? 0}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">Goles</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
-                  {athlete?.asistencias || 42}
+                  {athlete?.asistencias ?? 0}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">Asistencias</span>
               </div>
@@ -169,7 +167,7 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
 
         {posts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center text-slate-500 text-sm">
-            Aún no has publicado ningún video. ¡Comparte tus mejores jugadas en la pestaña "Subir video"!
+            Aún no has publicado ningún contenido. ¡Comparte tus mejores jugadas en la pestaña "Publicar"!
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
@@ -184,18 +182,24 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                   className="relative aspect-[16/10] bg-slate-900 overflow-hidden"
                 >
                   <img
-                    src={post.thumbnail_url || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600&auto=format&fit=crop&q=80'}
-                    alt={post.titulo || 'Video'}
+                    src={post.media_type === 'image'
+                      ? post.video_url
+                      : post.thumbnail_url || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=600&auto=format&fit=crop&q=80'}
+                    alt={post.titulo || (post.media_type === 'image' ? 'Foto' : 'Video')}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-                    <div className="w-11 h-11 rounded-full bg-white/95 text-[#1E3A8A] flex items-center justify-center shadow pl-0.5">
-                      <Play className="w-5 h-5 fill-current" />
+                  {post.media_type !== 'image' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                      <div className="w-11 h-11 rounded-full bg-white/95 text-[#1E3A8A] flex items-center justify-center shadow pl-0.5">
+                        <Play className="w-5 h-5 fill-current" />
+                      </div>
                     </div>
-                  </div>
-                  <span className="absolute bottom-2 right-2 bg-black/75 text-white text-[11px] font-mono px-2 py-0.5 rounded">
-                    {post.duracion || '0:45'}
-                  </span>
+                  )}
+                  {post.media_type !== 'image' && (
+                    <span className="absolute bottom-2 right-2 bg-black/75 text-white text-[11px] font-mono px-2 py-0.5 rounded">
+                      {post.duracion || '0:45'}
+                    </span>
+                  )}
                 </div>
 
                 {/* Título y descripción */}
@@ -240,7 +244,7 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
         )}
       </section>
 
-      {/* Modal para reproducir video al hacer clic */}
+      {/* Modal para ver el contenido al hacer clic */}
       {selectedVideo && (
         <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
@@ -254,11 +258,19 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
               </button>
             </div>
             <div className="p-4">
-              <VideoPlayer
-                src={selectedVideo.video_url}
-                poster={selectedVideo.thumbnail_url}
-                duration={selectedVideo.duracion}
-              />
+              {selectedVideo.media_type === 'image' ? (
+                <img
+                  src={selectedVideo.video_url}
+                  alt={selectedVideo.titulo || 'Foto deportiva'}
+                  className="w-full max-h-[60vh] object-contain rounded-xl bg-slate-100"
+                />
+              ) : (
+                <VideoPlayer
+                  src={selectedVideo.video_url}
+                  poster={selectedVideo.thumbnail_url}
+                  duration={selectedVideo.duracion}
+                />
+              )}
               <p className="mt-3 text-sm text-slate-700">{selectedVideo.descripcion}</p>
             </div>
           </div>

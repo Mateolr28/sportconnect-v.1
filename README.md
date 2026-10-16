@@ -114,6 +114,7 @@ Configura tu archivo `.env` tomando como base `.env.example`:
 2. **Ejecutar el Esquema SQL:**
    - Ve a la sección **SQL Editor** en el dashboard de Supabase.
    - Copia y ejecuta todo el contenido de `supabase/migrations/0001_sportconnect_schema.sql`.
+   - Si la base de datos ya estaba creada, ejecuta también `supabase/migrations/0004_post_media_type.sql` para habilitar publicaciones de fotos.
    - Opcional: ejecuta `supabase/seed.sql` para cargar deportistas, clubes y videos de ejemplo.
 3. **Verificar Buckets en Storage:**
    - El script SQL crea automáticamente los buckets `sports-videos` y `avatars` con acceso público de lectura y políticas de subida para usuarios autenticados.

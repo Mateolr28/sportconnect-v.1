@@ -87,6 +87,7 @@ export interface Post {
   id: string;
   user_id: string;
   video_url: string;
+  media_type?: 'video' | 'image';
   storage_path?: string;
   thumbnail_url?: string;
   titulo?: string;

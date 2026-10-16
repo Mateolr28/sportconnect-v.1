@@ -15,7 +15,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, unrea
     { id: 'inicio', label: 'Inicio', icon: Home },
     { id: 'descubrir', label: 'Descubrir', icon: Search },
     { id: 'perfil', label: 'Perfil', icon: User },
-    { id: 'subir', label: 'Subir video', icon: Upload },
+    { id: 'subir', label: 'Publicar', icon: Upload },
     { id: 'mensajes', label: 'Mensajes', icon: MessageCircle },
   ];
 

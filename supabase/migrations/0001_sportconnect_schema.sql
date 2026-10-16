@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS public.posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     video_url TEXT NOT NULL,
+    media_type TEXT NOT NULL DEFAULT 'video' CHECK (media_type IN ('video', 'image')),
     storage_path TEXT,
     thumbnail_url TEXT,
     titulo TEXT,

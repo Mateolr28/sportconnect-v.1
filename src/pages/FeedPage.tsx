@@ -108,17 +108,17 @@ export const FeedPage: React.FC<FeedPageProps> = ({
         ) : posts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
             <p className="text-slate-600 font-semibold text-base">
-              No se encontraron videos con los filtros actuales
+              No se encontraron publicaciones con los filtros actuales
             </p>
             <p className="text-slate-400 text-xs max-w-sm mx-auto">
-              Intenta cambiar los filtros de búsqueda o sé el primero en subir un video deportivo para darte a conocer.
+              Intenta cambiar los filtros de búsqueda o sé el primero en publicar una foto o video deportivo.
             </p>
             <button
               onClick={onNavigateToUpload}
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A8A] text-white rounded-xl text-xs font-semibold hover:bg-blue-900 transition-colors shadow-sm mt-2"
             >
               <Plus className="w-4 h-4" />
-              <span>Publicar video</span>
+              <span>Crear publicación</span>
             </button>
           </div>
         ) : (
