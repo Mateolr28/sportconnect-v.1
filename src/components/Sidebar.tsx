@@ -74,8 +74,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, unrea
         {/* Perfil del usuario activo */}
         <div className="relative">
           <div className="flex items-center gap-3 p-2 rounded-xl">
-            <div className="w-10 h-10 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0">
-              {getInitials(profile?.nombre)}
+            <div className="w-10 h-10 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0 overflow-hidden">
+              {profile?.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={`Foto de ${profile.nombre}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                getInitials(profile?.nombre)
+              )}
             </div>
             <div className="overflow-hidden flex-1 text-left">
               <p className="text-sm font-semibold text-slate-900 truncate">

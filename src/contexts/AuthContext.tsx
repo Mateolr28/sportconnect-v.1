@@ -135,11 +135,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Iniciar Sesión con Supabase Auth
   const login = async (email: string, password: string) => {
     if (configured) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      return { error: error ? new Error(error.message) : null };
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        return { error: error ? new Error(error.message) : null };
+      } catch (err) {
+        console.error('No se pudo conectar con Supabase para iniciar sesión:', err);
+        return {
+          error: new Error(
+            'No se pudo conectar con Supabase. Verifica VITE_SUPABASE_URL, tu conexión de red y que el proyecto siga activo.'
+          ),
+        };
+      }
     } else {
       return { error: new Error('Supabase no está configurado. No se puede iniciar una sesión de prueba.') };
     }

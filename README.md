@@ -97,6 +97,8 @@ Configura tu archivo `.env` tomando como base `.env.example`:
 - `VITE_SUPABASE_ANON_KEY`: Llave pública `anon` de Supabase. Es segura para el navegador ya que está restringida por las políticas Row Level Security (RLS).
 - `VITE_API_URL`: URL base del backend Express (opcional si se ejecuta de forma unificada).
 
+> **Importante:** la URL y la clave deben pertenecer al mismo proyecto Supabase activo. Si el navegador muestra `ERR_NAME_NOT_RESOLVED` al llamar a `/auth/v1/token`, el dominio configurado ya no resuelve (por ejemplo, el proyecto fue eliminado o la URL es antigua). Actualiza `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` con los valores de **Project Settings > API** y reinicia el servidor de desarrollo para que Vite vuelva a cargar `.env`.
+
 ### Backend (Privadas - NUNCA exponer al cliente o navegador):
 - `SUPABASE_URL`: URL del proyecto Supabase.
 - `SUPABASE_ANON_KEY`: Llave anónima para consultas estándar en el servidor.
