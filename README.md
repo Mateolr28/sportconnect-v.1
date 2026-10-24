@@ -114,8 +114,14 @@ Configura tu archivo `.env` tomando como base `.env.example`:
 2. **Ejecutar el Esquema SQL:**
    - Ve a la sección **SQL Editor** en el dashboard de Supabase.
    - Copia y ejecuta todo el contenido de `supabase/migrations/0001_sportconnect_schema.sql`.
-   - Si la base de datos ya estaba creada, ejecuta también `supabase/migrations/0004_post_media_type.sql` para habilitar publicaciones de fotos.
-   - Opcional: ejecuta `supabase/seed.sql` para cargar deportistas, clubes y videos de ejemplo.
+   - Si la base de datos ya estaba creada, ejecuta también `supabase/migrations/0004_post_media_type.sql` para habilitar publicaciones de fotos, `supabase/migrations/0005_comments_public_read.sql` para garantizar que los comentarios sean visibles para todos y `supabase/migrations/0006_neutral_athlete_defaults.sql` para que las cuentas nuevas no hereden datos de fútbol.
+   - Opcional: ejecuta `supabase/seed.sql` para cargar cuatro usuarios autenticables, deportistas, clubes, videos, comentarios y chats de ejemplo.
+   - Las cuentas de prueba usan la contraseña `Test1234!`:
+     - `carlos.martinez@sportconnect.dev` (deportista)
+     - `ana.rodriguez@sportconnect.dev` (deportista)
+     - `scout.fcb@sportconnect.dev` (reclutador)
+     - `scout.rm@sportconnect.dev` (reclutador)
+   - Ejecuta el seed después de las migraciones, desde **SQL Editor**. Es idempotente y puede ejecutarse de nuevo para restaurar los datos.
 3. **Verificar Buckets en Storage:**
    - El script SQL crea automáticamente los buckets `sports-videos` y `avatars` con acceso público de lectura y políticas de subida para usuarios autenticados.
 4. **Habilitar Supabase Realtime:**

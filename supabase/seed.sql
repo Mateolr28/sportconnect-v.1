@@ -1,9 +1,89 @@
 -- ==============================================================================
 -- SPORTCONNECT - SEED DATA (DATOS DE EJEMPLO)
 -- Usuarios de prueba, perfiles de deportistas y reclutadores, videos y chats.
+--
+-- Credenciales para pruebas:
+--   carlos.martinez@sportconnect.dev / Test1234!
+--   ana.rodriguez@sportconnect.dev   / Test1234!
+--   scout.fcb@sportconnect.dev       / Test1234!
+--   scout.rm@sportconnect.dev        / Test1234!
 -- ==============================================================================
 
--- 1. Insertar perfiles de demostración (utilizando UUIDs consistentes)
+-- 1. Crear usuarios de Supabase Auth para que las cuentas puedan iniciar sesión.
+-- La contraseña solo es para desarrollo y debe cambiarse antes de publicar.
+INSERT INTO auth.users (
+    id,
+    instance_id,
+    aud,
+    role,
+    email,
+    encrypted_password,
+    email_confirmed_at,
+    raw_app_meta_data,
+    raw_user_meta_data,
+    created_at,
+    updated_at
+)
+VALUES
+(
+    'a1111111-1111-4111-a111-111111111111',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'carlos.martinez@sportconnect.dev',
+    crypt('Test1234!', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"nombre":"Carlos Martínez","rol":"deportista","ubicacion":"Madrid, España","primer_nombre":"Carlos","primer_apellido":"Martínez","pais_nacimiento":"España","region_nacimiento":"Comunidad de Madrid","ciudad_nacimiento":"Madrid"}'::jsonb,
+    now(),
+    now()
+),
+(
+    'a2222222-2222-4222-a222-222222222222',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'ana.rodriguez@sportconnect.dev',
+    crypt('Test1234!', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"nombre":"Ana Rodríguez","rol":"deportista","ubicacion":"Valencia, España","primer_nombre":"Ana","primer_apellido":"Rodríguez","pais_nacimiento":"España","region_nacimiento":"Comunidad Valenciana","ciudad_nacimiento":"Valencia"}'::jsonb,
+    now(),
+    now()
+),
+(
+    'b1111111-1111-4111-b111-111111111111',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'scout.fcb@sportconnect.dev',
+    crypt('Test1234!', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"nombre":"FC Barcelona Academy","rol":"reclutador","ubicacion":"Barcelona, España","primer_nombre":"FC","primer_apellido":"Barcelona Academy","pais_nacimiento":"España","region_nacimiento":"Cataluña","ciudad_nacimiento":"Barcelona"}'::jsonb,
+    now(),
+    now()
+),
+(
+    'b2222222-2222-4222-b222-222222222222',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'scout.rm@sportconnect.dev',
+    crypt('Test1234!', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"nombre":"Real Madrid Scout","rol":"reclutador","ubicacion":"Madrid, España","primer_nombre":"Real Madrid","primer_apellido":"Scout","pais_nacimiento":"España","region_nacimiento":"Comunidad de Madrid","ciudad_nacimiento":"Madrid"}'::jsonb,
+    now(),
+    now()
+)
+ON CONFLICT (id) DO UPDATE SET
+    encrypted_password = EXCLUDED.encrypted_password,
+    email_confirmed_at = COALESCE(auth.users.email_confirmed_at, EXCLUDED.email_confirmed_at),
+    raw_user_meta_data = EXCLUDED.raw_user_meta_data,
+    updated_at = now();
+
+-- 2. Insertar perfiles de demostración (utilizando UUIDs consistentes)
 DO $$
 DECLARE
     athlete1_id UUID := 'a1111111-1111-4111-a111-111111111111';

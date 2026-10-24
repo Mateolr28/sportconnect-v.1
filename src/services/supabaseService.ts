@@ -289,6 +289,25 @@ export const supabaseService = {
     return newComment;
   },
 
+  async getComments(postId: string): Promise<Comment[]> {
+    if (isSupabaseConfigured()) {
+      try {
+        const { data, error } = await supabase
+          .from('comments')
+          .select('*, autor:profiles(nombre, avatar_url, rol)')
+          .eq('post_id', postId)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return (data as Comment[]) || [];
+      } catch (err) {
+        console.warn('Error cargando comentarios de Supabase, usando los del post:', err);
+      }
+    }
+
+    return localPosts.find((item) => item.id === postId)?.comments || [];
+  },
+
   async deleteComment(commentId: string, postId: string): Promise<void> {
     if (isSupabaseConfigured()) {
       await supabase.from('comments').delete().eq('id', commentId);

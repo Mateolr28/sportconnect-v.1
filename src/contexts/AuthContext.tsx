@@ -167,8 +167,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     region_nacimiento,
     ciudad_nacimiento,
     edad,
-    disciplina = 'Fútbol',
-    posicion = 'Delantero',
+    disciplina = '',
+    posicion = '',
   }: {
     primer_nombre: string;
     segundo_nombre?: string;

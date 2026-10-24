@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
+import { Heart, MessageCircle, Send } from 'lucide-react';
 import { Post, Profile } from '../types';
 import { VideoPlayer } from './VideoPlayer';
 import { supabaseService } from '../services/supabaseService';
@@ -44,7 +44,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   const { profile } = useAuth();
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const [isLiked, setIsLiked] = useState(Boolean(post.is_liked_by_user));
-  const [isSaved, setIsSaved] = useState(Boolean(post.is_saved_by_user));
   const [likeAnimating, setLikeAnimating] = useState(false);
 
   const handleLike = async () => {
@@ -102,9 +101,16 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           onClick={() => onViewProfile && post.user_id && onViewProfile(post.user_id)}
           className="flex items-center gap-3 cursor-pointer group"
         >
-          {/* Avatar iniciales */}
           <div className="w-11 h-11 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-sm group-hover:opacity-90 transition-opacity">
-            {authorInitials}
+            {post.autor?.avatar_url ? (
+              <img
+                src={post.autor.avatar_url}
+                alt={`Foto de perfil de ${authorName}`}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              authorInitials
+            )}
           </div>
 
           <div>
@@ -123,14 +129,6 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           </div>
         </div>
 
-        {/* Botón Guardar / Bookmark */}
-        <button
-          onClick={() => setIsSaved(!isSaved)}
-          className="p-2 text-slate-400 hover:text-slate-800 transition-colors"
-          title={isSaved ? 'Guardado' : 'Guardar publicación'}
-        >
-          <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-slate-800 text-slate-800' : ''}`} />
-        </button>
       </div>
 
       {/* 2. Contenido multimedia */}

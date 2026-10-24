@@ -41,14 +41,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [avatarPreview, setAvatarPreview] = useState(profile?.avatar_url || '');
 
   // Campos de atleta
-  const [disciplina, setDisciplina] = useState(athleteProfile?.disciplina || 'Fútbol');
+  const [disciplina, setDisciplina] = useState(athleteProfile?.disciplina || '');
   const [deportePersonalizado, setDeportePersonalizado] = useState(
     athleteProfile?.disciplina && !commonSports.includes(athleteProfile.disciplina)
       ? athleteProfile.disciplina
       : ''
   );
-  const [posicion, setPosicion] = useState(athleteProfile?.posicion || 'Delantero');
-  const [edad, setEdad] = useState(athleteProfile?.edad || 22);
+  const [posicion, setPosicion] = useState(athleteProfile?.posicion || '');
+  const [edad, setEdad] = useState(athleteProfile?.edad || 0);
   const [partidos, setPartidos] = useState(athleteProfile?.partidos ?? 0);
   const [goles, setGoles] = useState(athleteProfile?.goles ?? 0);
   const [asistencias, setAsistencias] = useState(athleteProfile?.asistencias ?? 0);
@@ -69,6 +69,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const selectedSport = (disciplina === 'Otro' ? deportePersonalizado : disciplina).toLowerCase();
+  const statLabels = selectedSport.includes('baloncesto')
+    ? ['Partidos', 'Puntos', 'Asistencias']
+    : selectedSport.includes('tenis')
+      ? ['Partidos', 'Victorias', 'Asistencias']
+      : selectedSport.includes('atletismo') || selectedSport.includes('natación') || selectedSport.includes('ciclismo')
+        ? ['Competencias', 'Medallas', 'Podios']
+        : selectedSport.includes('voleibol')
+          ? ['Partidos', 'Puntos', 'Bloqueos']
+          : ['Partidos', 'Goles', 'Asistencias'];
   const selectedCountry = getCountryByName(paisNacimiento);
   const availableRegions = selectedCountry ? getRegions(selectedCountry.code) : [];
   const selectedRegion = availableRegions.find((region) => region.name === regionNacimiento);
@@ -273,16 +283,17 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 <div>
                   <span className="text-[11px] text-slate-500 block mb-1">Deporte</span>
                   <select
-                    value={commonSports.includes(disciplina) ? disciplina : 'Otro'}
+                    value={!disciplina ? '' : commonSports.includes(disciplina) ? disciplina : 'Otro'}
                     onChange={(e) => setDisciplina(e.target.value === 'Otro' ? 'Otro' : e.target.value)}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                   >
+                    <option value="">Selecciona un deporte</option>
                     {commonSports.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
                     <option value="Otro">Otro</option>
                   </select>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Posición</span>
+                  <span className="text-[11px] text-slate-500 block mb-1">Posición / especialidad</span>
                   <input
                     type="text"
                     value={posicion}
@@ -363,7 +374,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 <input type="text" placeholder="Academia" value={academia} onChange={(e) => setAcademia(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
                 <input type="number" min="0" placeholder="Años de experiencia" value={experienciaAnios} onChange={(e) => setExperienciaAnios(Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
               </div>
-              {(!commonSports.includes(disciplina) || disciplina === 'Otro') && (
+              {disciplina !== '' && (!commonSports.includes(disciplina) || disciplina === 'Otro') && (
                 <input
                   type="text"
                   required
@@ -376,7 +387,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Partidos</span>
+                  <span className="text-[11px] text-slate-500 block mb-1">{statLabels[0]}</span>
                   <input
                     type="number"
                     value={partidos}
@@ -385,7 +396,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                   />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Goles</span>
+                  <span className="text-[11px] text-slate-500 block mb-1">{statLabels[1]}</span>
                   <input
                     type="number"
                     value={goles}
@@ -394,7 +405,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                   />
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 block mb-1">Asistencias</span>
+                  <span className="text-[11px] text-slate-500 block mb-1">{statLabels[2]}</span>
                   <input
                     type="number"
                     value={asistencias}

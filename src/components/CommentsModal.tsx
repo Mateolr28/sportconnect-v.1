@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, Send, Trash2 } from 'lucide-react';
 import { Post, Comment } from '../types';
 import { supabaseService } from '../services/supabaseService';
@@ -16,6 +16,28 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
   const [comments, setComments] = useState<Comment[]>(post?.comments || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadComments = async () => {
+      if (!post) {
+        setComments([]);
+        return;
+      }
+
+      const loadedComments = await supabaseService.getComments(post.id);
+      if (isMounted) {
+        setComments(loadedComments);
+      }
+    };
+
+    loadComments();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [post?.id]);
+
   if (!post) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,7 +47,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
     setIsSubmitting(true);
     try {
       const newComment = await supabaseService.addComment(post.id, profile.id, commentText.trim(), profile);
-      setComments([...comments, newComment]);
+      setComments((currentComments) => [...currentComments, newComment]);
       setCommentText('');
       if (onCommentAdded) onCommentAdded();
     } catch (err) {

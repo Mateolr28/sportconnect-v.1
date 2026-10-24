@@ -33,6 +33,16 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
     .toUpperCase();
 
   const achievements = athlete?.logros || [];
+  const sport = athlete?.disciplina?.toLowerCase() || '';
+  const statLabels = sport.includes('baloncesto')
+    ? ['Partidos', 'Puntos', 'Asistencias']
+    : sport.includes('tenis')
+      ? ['Partidos', 'Victorias', 'Asistencias']
+      : sport.includes('atletismo') || sport.includes('natación') || sport.includes('ciclismo')
+        ? ['Competencias', 'Medallas', 'Podios']
+        : sport.includes('voleibol')
+          ? ['Partidos', 'Puntos', 'Bloqueos']
+          : ['Partidos', 'Goles', 'Asistencias'];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -93,21 +103,22 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
             {/* Badges deportivas */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <span className="bg-[#10B981] text-white text-xs font-semibold px-2.5 py-1 rounded-md">
-                {athlete?.disciplina || 'Fútbol'}
+                {athlete?.disciplina || 'Deporte no especificado'}
               </span>
               <span className="bg-white/10 text-white text-xs font-medium px-2.5 py-1 rounded-md">
-                {athlete?.posicion || 'Delantero'}
+                {athlete?.posicion || 'Posición no especificada'}
               </span>
               <span className="bg-white/10 text-white text-xs font-medium px-2.5 py-1 rounded-md">
-                {athlete?.edad || 22} años
+                {athlete?.edad ? `${athlete.edad} años` : 'Edad no especificada'}
               </span>
             </div>
 
             {/* Biografía */}
-            <p className="text-slate-300 text-xs md:text-sm leading-relaxed max-w-3xl pt-1">
-              {profile.bio ||
-                'Delantero profesional con experiencia en categorías inferiores. Especializado en velocidad y finalización. Enfoque en desarrollo continuo y trabajo en equipo.'}
-            </p>
+            {profile.bio && (
+              <p className="text-slate-300 text-xs md:text-sm leading-relaxed max-w-3xl pt-1">
+                {profile.bio}
+              </p>
+            )}
 
             {/* Métricas destacadas en bloque oscuro */}
             <div className="grid grid-cols-3 gap-4 pt-4 max-w-lg">
@@ -115,19 +126,19 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                 <span className="text-xl md:text-2xl font-black text-white block">
                   {athlete?.partidos ?? 0}+
                 </span>
-                <span className="text-xs text-slate-400 font-medium">Partidos</span>
+                <span className="text-xs text-slate-400 font-medium">{statLabels[0]}</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
                   {athlete?.goles ?? 0}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">Goles</span>
+                <span className="text-xs text-slate-400 font-medium">{statLabels[1]}</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
                   {athlete?.asistencias ?? 0}
                 </span>
-                <span className="text-xs text-slate-400 font-medium">Asistencias</span>
+                <span className="text-xs text-slate-400 font-medium">{statLabels[2]}</span>
               </div>
             </div>
           </div>
@@ -141,8 +152,9 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
           <h2 className="text-lg font-bold text-slate-900">Logros destacados</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {achievements.map((logro, index) => (
+        {achievements.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {achievements.map((logro, index) => (
             <div
               key={index}
               className="bg-white border border-slate-200 rounded-2xl p-4 flex items-center gap-3.5 shadow-sm hover:border-[#10B981] transition-colors"
@@ -152,8 +164,11 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
               </div>
               <span className="text-sm font-semibold text-slate-800">{logro}</span>
             </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Aún no hay logros destacados.</p>
+        )}
       </section>
 
       {/* 3. Sección: Galería de videos */}
