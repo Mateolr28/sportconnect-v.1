@@ -24,6 +24,8 @@ interface AuthContextType {
     edad?: number;
     disciplina?: string;
     posicion?: string;
+    categoria?: string;
+    modalidad_competencia?: string;
   }) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
   updateProfile: (updatedData: Partial<Profile>) => Promise<void>;
@@ -169,6 +171,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     edad,
     disciplina = '',
     posicion = '',
+    categoria = '',
+    modalidad_competencia = '',
   }: {
     primer_nombre: string;
     segundo_nombre?: string;
@@ -183,6 +187,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     edad?: number;
     disciplina?: string;
     posicion?: string;
+    categoria?: string;
+    modalidad_competencia?: string;
   }) => {
     const nombre = [primer_nombre, segundo_nombre, primer_apellido, segundo_apellido]
       .filter(Boolean)
@@ -208,6 +214,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             edad,
             disciplina,
             posicion,
+            especialidad: posicion,
+            categoria,
+            modalidad_competencia,
           },
         },
       });
@@ -246,6 +255,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user_id: data.user.id,
             disciplina,
             posicion,
+            especialidad: posicion,
+            categoria,
+            modalidad_competencia,
             edad: edad || 20,
             partidos: 0,
             goles: 0,

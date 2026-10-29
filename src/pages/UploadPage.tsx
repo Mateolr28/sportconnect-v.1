@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { UploadCloud, CheckCircle2, AlertCircle, Film, Image, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabaseService } from '../services/supabaseService';
+import { sportNames } from '../data/sports';
 
 interface UploadPageProps {
   onPostCreated: () => void;
@@ -69,18 +70,6 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  const sportsList = [
-    'Fútbol',
-    'Baloncesto',
-    'Atletismo',
-    'Tenis',
-    'Natación',
-    'Voleibol',
-    'Fútbol Sala',
-    'Gimnasia',
-    'Béisbol',
-  ];
 
   const handleFile = async (file: File) => {
     setErrorMsg(null);
@@ -318,7 +307,7 @@ export const UploadPage: React.FC<UploadPageProps> = ({ onPostCreated }) => {
               onChange={(e) => setDeporte(e.target.value)}
               className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-xs md:text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] shadow-xs"
             >
-              {sportsList.map((s) => (
+              {sportNames.filter((sport) => sport !== 'Otros').map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>

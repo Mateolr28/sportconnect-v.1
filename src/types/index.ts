@@ -29,6 +29,9 @@ export interface AthleteProfile {
   user_id: string;
   disciplina: string;
   posicion: string;
+  categoria?: string;
+  especialidad?: string;
+  modalidad_competencia?: string;
   edad: number;
   partidos: number;
   goles: number;
@@ -58,6 +61,16 @@ export interface RecruiterProfile {
   contrataciones: number;
   scouts_activos: number;
   perfiles_buscados: string[];
+  deportes_buscados?: string[];
+  categorias_buscadas?: string[];
+  filosofia?: string;
+  proceso_seleccion?: string;
+  beneficios?: string[];
+  sitio_web?: string;
+  email_contacto?: string;
+  telefono_contacto?: string;
+  anio_fundacion?: number;
+  sede_principal?: string;
   created_at?: string;
   updated_at?: string;
 }

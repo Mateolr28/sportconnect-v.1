@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS public.athlete_profiles (
     partidos INTEGER DEFAULT 0 CHECK (partidos >= 0),
     goles INTEGER DEFAULT 0 CHECK (goles >= 0),
     asistencias INTEGER DEFAULT 0 CHECK (asistencias >= 0),
-    logros TEXT[] DEFAULT ARRAY['Campeón regional Sub-20', 'Máximo goleador 2023', 'Mejor jugador joven del torneo']::TEXT[],
+    logros TEXT[] DEFAULT ARRAY[]::TEXT[],
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );

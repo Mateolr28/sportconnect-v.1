@@ -108,6 +108,16 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
               <span className="bg-white/10 text-white text-xs font-medium px-2.5 py-1 rounded-md">
                 {athlete?.posicion || 'Posición no especificada'}
               </span>
+              {athlete?.categoria && (
+                <span className="bg-white/10 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                  {athlete.categoria}
+                </span>
+              )}
+              {athlete?.modalidad_competencia && (
+                <span className="bg-white/10 text-white text-xs font-medium px-2.5 py-1 rounded-md">
+                  {athlete.modalidad_competencia}
+                </span>
+              )}
               <span className="bg-white/10 text-white text-xs font-medium px-2.5 py-1 rounded-md">
                 {athlete?.edad ? `${athlete.edad} años` : 'Edad no especificada'}
               </span>
@@ -146,13 +156,12 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
       </div>
 
       {/* 2. Sección: Logros destacados */}
-      <section className="space-y-3">
+      {achievements.length > 0 && <section className="space-y-3">
         <div className="flex items-center gap-2">
           <Trophy className="w-5 h-5 text-[#10B981]" />
           <h2 className="text-lg font-bold text-slate-900">Logros destacados</h2>
         </div>
 
-        {achievements.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {achievements.map((logro, index) => (
             <div
@@ -166,10 +175,7 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
             </div>
             ))}
           </div>
-        ) : (
-          <p className="text-sm text-slate-500">Aún no hay logros destacados.</p>
-        )}
-      </section>
+      </section>}
 
       {/* 3. Sección: Galería de videos */}
       <section className="space-y-4">

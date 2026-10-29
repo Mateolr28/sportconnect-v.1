@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Filter, RotateCcw } from 'lucide-react';
 import { FeedFilters } from '../types';
+import { sportNames } from '../data/sports';
 
 interface FilterModalProps {
   isOpen: boolean;
@@ -23,7 +24,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
 
   if (!isOpen) return null;
 
-  const sportsList = ['Todos', 'Fútbol', 'Baloncesto', 'Atletismo', 'Tenis', 'Natación', 'Voleibol', 'Fútbol Sala'];
+  const sportsList = ['Todos', ...sportNames.filter((sport) => sport !== 'Otros')];
 
   const handleApply = () => {
     onApplyFilters({

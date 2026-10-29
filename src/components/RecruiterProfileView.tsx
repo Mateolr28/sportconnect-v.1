@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, MapPin, Edit3, Target, ArrowRight } from 'lucide-react';
+import { Building2, MapPin, Edit3, Target, Globe, Mail, Phone, CalendarDays, CheckCircle2 } from 'lucide-react';
 import { Profile, RecruiterProfile } from '../types';
 
 interface RecruiterProfileViewProps {
@@ -19,13 +19,7 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
   onFindAthletes,
   onViewAthlete,
 }) => {
-  const wantedProfiles = recruiter?.perfiles_buscados && recruiter.perfiles_buscados.length > 0
-    ? recruiter.perfiles_buscados
-    : [
-        'Delanteros veloces (18-23 años)',
-        'Mediocampistas creativos (17-22 años)',
-        'Defensas centrales (18-24 años)',
-      ];
+  const wantedProfiles = recruiter?.perfiles_buscados || [];
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-12">
@@ -47,12 +41,12 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
                   {recruiter?.nombre_club || profile.nombre}
                 </h1>
                 <p className="text-xs text-slate-300 font-medium mt-0.5">
-                  {recruiter?.tipo_institucion || 'Club de Fútbol Profesional'}
+                  {recruiter?.tipo_institucion || 'Institución deportiva'}
                 </p>
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-1">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5" />
-                    {profile.ubicacion || 'Barcelona, España'}
+                    {profile.ubicacion || 'Ubicación no especificada'}
                   </span>
                   {(profile.ciudad_nacimiento || profile.region_nacimiento || profile.pais_nacimiento) && (
                     <span>
@@ -74,39 +68,32 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
               )}
             </div>
 
-            {/* Badges deportivas */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="bg-[#10B981] text-white text-xs font-semibold px-2.5 py-1 rounded-md">
-                Fútbol
-              </span>
-              <span className="bg-[#10B981] text-white text-xs font-semibold px-2.5 py-1 rounded-md">
-                Fútbol Sala
-              </span>
+              {(recruiter?.deportes_buscados || []).map((sport) => <span key={sport} className="bg-[#10B981] text-white text-xs font-semibold px-2.5 py-1 rounded-md">{sport}</span>)}
             </div>
 
             {/* Descripción */}
             <p className="text-slate-300 text-xs md:text-sm leading-relaxed max-w-3xl pt-1">
-              {profile.bio ||
-                'Academia de fútbol profesional buscando talento joven para nuestras categorías inferiores. Enfocados en desarrollar futuras estrellas del fútbol con metodología de primer nivel y clase mundial.'}
+              {profile.bio || 'Este reclutador aún no ha agregado una presentación.'}
             </p>
 
             {/* Métricas del Reclutador */}
             <div className="grid grid-cols-3 gap-4 pt-4 max-w-lg">
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
-                  {recruiter?.deportistas_contactados || 150}+
+                  {recruiter?.deportistas_contactados || 0}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">Deportistas contactados</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
-                  {recruiter?.contrataciones || 12}
+                  {recruiter?.contrataciones || 0}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">Contrataciones</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3.5">
                 <span className="text-xl md:text-2xl font-black text-white block">
-                  {recruiter?.scouts_activos || 8}
+                  {recruiter?.scouts_activos || 0}
                 </span>
                 <span className="text-xs text-slate-400 font-medium">Scouts activos</span>
               </div>
@@ -115,8 +102,7 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
         </div>
       </div>
 
-      {/* 2. Sección: Perfiles que buscamos */}
-      <section className="space-y-4">
+      {(wantedProfiles.length > 0 || (recruiter?.categorias_buscadas || []).length > 0) && <section className="space-y-4">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded-full border-2 border-[#10B981] flex items-center justify-center">
             <div className="w-2 h-2 rounded-full bg-[#10B981]" />
@@ -133,6 +119,7 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
               <div className="w-9 h-9 rounded-xl bg-emerald-50 text-[#10B981] flex items-center justify-center flex-shrink-0">
                 <Target className="w-4 h-4" />
               </div>
+              {(recruiter?.categorias_buscadas || []).length > 0 && <div className="flex flex-wrap gap-2"><span className="text-xs font-bold text-slate-500">Categorías:</span>{recruiter?.categorias_buscadas?.map((item) => <span key={item} className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs">{item}</span>)}</div>}
               <span className="text-sm font-semibold text-slate-800">{p}</span>
             </div>
           ))}
@@ -148,7 +135,16 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
             <span>Buscar deportistas</span>
           </button>
         </div>
-      </section>
+      </section>}
+
+      {(recruiter?.filosofia || recruiter?.proceso_seleccion || recruiter?.beneficios?.length || recruiter?.sitio_web || recruiter?.email_contacto || recruiter?.telefono_contacto || recruiter?.anio_fundacion || recruiter?.sede_principal) && (
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {(recruiter.filosofia || recruiter.proceso_seleccion) && <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4"><h2 className="font-bold text-slate-900">Nuestra propuesta</h2>{recruiter.filosofia && <div><h3 className="text-xs font-bold text-emerald-700 uppercase">Filosofía</h3><p className="text-sm text-slate-600 mt-1">{recruiter.filosofia}</p></div>}{recruiter.proceso_seleccion && <div><h3 className="text-xs font-bold text-emerald-700 uppercase">Proceso de selección</h3><p className="text-sm text-slate-600 mt-1">{recruiter.proceso_seleccion}</p></div>}</div>}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3"><h2 className="font-bold text-slate-900">Información institucional</h2>{recruiter.sede_principal && <p className="flex gap-2 text-sm text-slate-600"><MapPin className="w-4 h-4 text-emerald-600" />{recruiter.sede_principal}</p>}{recruiter.anio_fundacion && <p className="flex gap-2 text-sm text-slate-600"><CalendarDays className="w-4 h-4 text-emerald-600" />Desde {recruiter.anio_fundacion}</p>}{recruiter.email_contacto && <p className="flex gap-2 text-sm text-slate-600"><Mail className="w-4 h-4 text-emerald-600" />{recruiter.email_contacto}</p>}{recruiter.telefono_contacto && <p className="flex gap-2 text-sm text-slate-600"><Phone className="w-4 h-4 text-emerald-600" />{recruiter.telefono_contacto}</p>}{recruiter.sitio_web && <a href={recruiter.sitio_web} target="_blank" rel="noreferrer" className="flex gap-2 text-sm text-blue-700 hover:underline"><Globe className="w-4 h-4" />Visitar sitio web</a>}</div>
+        </section>
+      )}
+
+      {(recruiter?.beneficios || []).length > 0 && <section className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5"><h2 className="font-bold text-slate-900 mb-3">Lo que ofrecemos</h2><div className="flex flex-wrap gap-3">{recruiter?.beneficios?.map((benefit) => <span key={benefit} className="flex items-center gap-1.5 text-sm text-emerald-800"><CheckCircle2 className="w-4 h-4" />{benefit}</span>)}</div></section>}
 
     </div>
   );

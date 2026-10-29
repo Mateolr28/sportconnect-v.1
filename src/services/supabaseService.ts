@@ -31,6 +31,9 @@ const postMatchesFilters = (post: Post, filters?: FeedFilters) => {
     author?.ciudad_nacimiento,
     athlete?.disciplina,
     athlete?.posicion,
+    athlete?.categoria,
+    athlete?.especialidad,
+    athlete?.modalidad_competencia,
     athlete?.club_actual,
     athlete?.academia,
   ].join(' '));

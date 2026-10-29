@@ -19,6 +19,7 @@ import {
 import { AthleteSearchResult, Profile } from '../types';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
+import { sportDefinitions, sportNames } from '../data/sports';
 
 interface SearchPageProps {
   onViewProfile: (userId: string) => void;
@@ -29,6 +30,7 @@ type AgeRange = '' | 'under15' | '15-17' | '18-20' | '21-23' | '24-27' | '28+' |
 type SearchFilters = {
   sports: string[];
   positions: string[];
+  categories: string[];
   ageRange: AgeRange;
   minAge: string;
   maxAge: string;
@@ -41,20 +43,15 @@ type SearchFilters = {
   experience: string;
 };
 
-const sports = ['Fútbol', 'Baloncesto', 'Voleibol', 'Atletismo', 'Natación', 'Ciclismo', 'Tenis', 'Béisbol', 'Boxeo', 'Gimnasia', 'Otros'];
-const positionsBySport: Record<string, string[]> = {
-  Fútbol: ['Portero', 'Defensa central', 'Lateral derecho', 'Lateral izquierdo', 'Mediocampista', 'Extremo', 'Delantero'],
-  Baloncesto: ['Base', 'Escolta', 'Alero', 'Ala-pívot', 'Pívot'],
-  Voleibol: ['Colocador', 'Líbero', 'Central', 'Punta', 'Opuesto'],
-  Atletismo: ['Velocidad', 'Fondo', 'Saltos', 'Lanzamientos'],
-  Natación: ['Libre', 'Espalda', 'Braza', 'Mariposa'],
-};
+const sports = sportNames;
+const positionsBySport = Object.fromEntries(sportDefinitions.map((sport) => [sport.name, sport.specialties])) as Record<string, string[]>;
+const categoriesBySport = Object.fromEntries(sportDefinitions.map((sport) => [sport.name, sport.categories])) as Record<string, string[]>;
 const levels = [['amateur', 'Amateur'], ['formativo', 'Formativo'], ['semiprofesional', 'Semiprofesional'], ['profesional', 'Profesional'], ['elite', 'Élite']];
 const availabilityOptions = [['disponible', 'Disponible'], ['buscando_equipo', 'Buscando equipo'], ['pruebas', 'Disponible para pruebas'], ['contrato_vigente', 'Contrato vigente'], ['no_disponible', 'No disponible']];
 const suggestionCategories = ['Deportes', 'Posiciones', 'Clubes', 'Academias', 'Ciudades', 'Categorías'];
 
 const emptyFilters: SearchFilters = {
-  sports: [], positions: [], ageRange: '', minAge: '', maxAge: '', location: '', gender: '', level: '', availability: '', club: '', academy: '', experience: '',
+  sports: [], positions: [], categories: [], ageRange: '', minAge: '', maxAge: '', location: '', gender: '', level: '', availability: '', club: '', academy: '', experience: '',
 };
 
 const initials = (name: string) => name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
@@ -81,7 +78,8 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
       .finally(() => setIsLoading(false));
   }, [currentProfile?.id]);
 
-  const allPositions = Array.from(new Set(draftFilters.sports.flatMap((sport) => positionsBySport[sport] || [])));
+  const availablePositions = Array.from(new Set(draftFilters.sports.flatMap((sport) => positionsBySport[sport] || [])));
+  const availableCategories = Array.from(new Set(draftFilters.sports.flatMap((sport) => categoriesBySport[sport] || [])));
   const filteredAthletes = athletes.filter(({ profile, athlete }) => {
     const searchable = normalize([
       profile.nombre,
@@ -95,6 +93,9 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
       profile.ciudad_nacimiento,
       athlete.disciplina,
       athlete.posicion,
+      athlete.especialidad,
+      athlete.categoria,
+      athlete.modalidad_competencia,
       athlete.club_actual,
       athlete.academia,
     ].join(' '));
@@ -109,6 +110,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
         ? !sports.slice(0, -1).some((item) => normalize(athlete.disciplina).includes(normalize(item)))
         : normalize(athlete.disciplina).includes(normalize(sport))))
       && (!filters.positions.length || filters.positions.some((position) => normalize(athlete.posicion).includes(normalize(position))))
+      && (!filters.categories.length || filters.categories.some((category) => normalize(athlete.categoria).includes(normalize(category))))
       && (minAge === undefined || age >= minAge)
       && (maxAge === undefined || age <= maxAge)
       && (!filters.location || normalize([profile.ubicacion, profile.pais_nacimiento, profile.region_nacimiento, profile.ciudad_nacimiento].join(' ')).includes(normalize(filters.location)))
@@ -129,12 +131,28 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
       profile.segundo_apellido,
       athlete.disciplina,
       athlete.posicion,
+      athlete.categoria,
+      athlete.especialidad,
+      athlete.modalidad_competencia,
       profile.ubicacion,
     ].join(' ')).includes(normalize(query))).slice(0, 5)
     : [];
 
-  const toggleDraftArray = (key: 'sports' | 'positions', value: string) => {
-    setDraftFilters((current) => ({ ...current, [key]: current[key].includes(value) ? current[key].filter((item) => item !== value) : [...current[key], value] }));
+  const toggleDraftArray = (key: 'sports' | 'positions' | 'categories', value: string) => {
+    setDraftFilters((current) => {
+      const values = current[key];
+      const nextValues = values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
+      if (key !== 'sports') return { ...current, [key]: nextValues };
+
+      const nextSports = nextValues;
+      const nextPositions = current.positions.filter((position) =>
+        nextSports.some((sport) => positionsBySport[sport]?.includes(position))
+      );
+      const nextCategories = current.categories.filter((category) =>
+        nextSports.some((sport) => categoriesBySport[sport]?.includes(category))
+      );
+      return { ...current, sports: nextSports, positions: nextPositions, categories: nextCategories };
+    });
   };
 
   const handleAiSearch = () => {
@@ -155,7 +173,7 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
     setAiSummary(interpreted.length ? interpreted : ['No se detectaron filtros estructurados; se usará el texto completo.']);
   };
 
-  const activeFilterCount = filters.sports.length + filters.positions.length + [filters.ageRange, filters.location, filters.gender, filters.level, filters.availability, filters.club, filters.academy, filters.experience].filter(Boolean).length;
+  const activeFilterCount = filters.sports.length + filters.positions.length + filters.categories.length + [filters.ageRange, filters.location, filters.gender, filters.level, filters.availability, filters.club, filters.academy, filters.experience].filter(Boolean).length;
 
   return (
     <div className="min-h-screen bg-[#f7f9fc] pb-16">
@@ -194,7 +212,16 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
               <div className="flex items-center justify-between mb-5"><div className="flex items-center gap-2"><SlidersHorizontal className="w-4 h-4 text-[#1E3A8A]" /><h2 className="font-bold text-slate-900 text-sm">Filtros avanzados</h2></div><button onClick={() => setShowFilters(false)} className="lg:hidden text-slate-400"><X className="w-4 h-4" /></button></div>
               <div className="space-y-5">
                 <FilterSection title="Deporte"><div className="flex flex-wrap gap-2">{sports.map((sport) => <button key={sport} type="button" onClick={() => toggleDraftArray('sports', sport)} className={`px-2.5 py-1.5 rounded-lg border text-xs ${draftFilters.sports.includes(sport) ? 'bg-emerald-500 text-white border-emerald-500' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}>{sport}</button>)}</div></FilterSection>
-                <FilterSection title="Posición"><div className="flex flex-wrap gap-2">{(allPositions.length ? allPositions : Object.values(positionsBySport).flat()).map((position) => <button key={position} type="button" onClick={() => toggleDraftArray('positions', position)} className={`px-2.5 py-1.5 rounded-lg border text-xs ${draftFilters.positions.includes(position) ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}>{position}</button>)}</div></FilterSection>
+                <FilterSection title="Posición / especialidad">
+                  {draftFilters.sports.length ? (
+                    <div className="flex flex-wrap gap-2">{availablePositions.map((position) => <button key={position} type="button" onClick={() => toggleDraftArray('positions', position)} className={`px-2.5 py-1.5 rounded-lg border text-xs ${draftFilters.positions.includes(position) ? 'bg-[#1E3A8A] text-white border-[#1E3A8A]' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}>{position}</button>)}</div>
+                  ) : <p className="text-xs text-slate-400">Selecciona primero un deporte.</p>}
+                </FilterSection>
+                <FilterSection title="Categoría">
+                  {draftFilters.sports.length ? (
+                    <div className="flex flex-wrap gap-2">{availableCategories.map((category) => <button key={category} type="button" onClick={() => toggleDraftArray('categories', category)} className={`px-2.5 py-1.5 rounded-lg border text-xs ${draftFilters.categories.includes(category) ? 'bg-emerald-500 text-white border-emerald-500' : 'border-slate-200 text-slate-600 hover:border-slate-400'}`}>{category}</button>)}</div>
+                  ) : <p className="text-xs text-slate-400">Selecciona primero un deporte.</p>}
+                </FilterSection>
                 <FilterSection title="Edad"><select value={draftFilters.ageRange} onChange={(e) => setDraftFilters({ ...draftFilters, ageRange: e.target.value as AgeRange })} className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs"><option value="">Cualquier edad</option><option value="under15">Menor de 15</option><option value="15-17">15-17</option><option value="18-20">18-20</option><option value="21-23">21-23</option><option value="24-27">24-27</option><option value="28+">28+</option><option value="custom">Rango personalizado</option></select>{draftFilters.ageRange === 'custom' && <div className="grid grid-cols-2 gap-2 mt-2"><input type="number" placeholder="Desde" value={draftFilters.minAge} onChange={(e) => setDraftFilters({ ...draftFilters, minAge: e.target.value })} className="border border-slate-200 rounded-xl px-3 py-2 text-xs" /><input type="number" placeholder="Hasta" value={draftFilters.maxAge} onChange={(e) => setDraftFilters({ ...draftFilters, maxAge: e.target.value })} className="border border-slate-200 rounded-xl px-3 py-2 text-xs" /></div>}</FilterSection>
                 <FilterSection title="Ubicación"><input value={draftFilters.location} onChange={(e) => setDraftFilters({ ...draftFilters, location: e.target.value })} placeholder="País, región o ciudad" className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs" /><p className="text-[11px] text-slate-400 mt-2">Ejemplo: Medellín + 50 km</p></FilterSection>
                 <FilterSection title="Perfil deportivo"><div className="grid grid-cols-2 gap-2"><select value={draftFilters.gender} onChange={(e) => setDraftFilters({ ...draftFilters, gender: e.target.value })} className="border border-slate-200 rounded-xl px-2 py-2 text-xs"><option value="">Género</option><option value="masculino">Masculino</option><option value="femenino">Femenino</option><option value="no_especificado">No especificado</option></select><select value={draftFilters.level} onChange={(e) => setDraftFilters({ ...draftFilters, level: e.target.value })} className="border border-slate-200 rounded-xl px-2 py-2 text-xs"><option value="">Nivel</option>{levels.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div><select value={draftFilters.availability} onChange={(e) => setDraftFilters({ ...draftFilters, availability: e.target.value })} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs mt-2"><option value="">Disponibilidad</option>{availabilityOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></FilterSection>

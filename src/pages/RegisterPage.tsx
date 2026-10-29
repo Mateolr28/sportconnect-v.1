@@ -3,21 +3,7 @@ import { Dumbbell, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types';
 import { countries, getCities, getCountryByName, getRegions } from '../data/locationOptions';
-
-const commonSports = [
-  'Fútbol',
-  'Baloncesto',
-  'Tenis',
-  'Atletismo',
-  'Natación',
-  'Ciclismo',
-  'Voleibol',
-  'Béisbol',
-  'Boxeo',
-  'Gimnasia',
-  'Rugby',
-  'Hockey',
-];
+import { getSportDefinition, sportNames } from '../data/sports';
 
 interface RegisterPageProps {
   onNavigateToLogin: () => void;
@@ -40,6 +26,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [disciplina, setDisciplina] = useState('');
   const [deportePersonalizado, setDeportePersonalizado] = useState('');
   const [posicion, setPosicion] = useState('');
+  const [categoria, setCategoria] = useState('');
+  const [modalidadCompetencia, setModalidadCompetencia] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rol, setRol] = useState<UserRole>('deportista');
@@ -94,8 +82,10 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       region_nacimiento: regionNacimiento.trim(),
       ciudad_nacimiento: ciudadNacimiento.trim(),
       edad: rol === 'deportista' ? edadNumero : undefined,
-      disciplina: (disciplina === 'Otro' ? deportePersonalizado : disciplina).trim(),
+      disciplina: (disciplina === 'Otros' ? deportePersonalizado : disciplina).trim(),
       posicion: posicion.trim(),
+      categoria: categoria.trim(),
+      modalidad_competencia: modalidadCompetencia.trim(),
     });
 
     setIsLoading(false);
@@ -166,15 +156,34 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
               <p className="text-xs font-bold text-slate-700 mb-2">Perfil deportivo</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <input type="number" required min="10" max="50" placeholder="Edad" value={edad} onChange={(e) => setEdad(e.target.value)} className="form-input" />
-                <select required value={disciplina} onChange={(e) => setDisciplina(e.target.value)} className="form-input">
+                <select required value={disciplina} onChange={(e) => { setDisciplina(e.target.value); setPosicion(''); setCategoria(''); setModalidadCompetencia(''); }} className="form-input">
                   <option value="" disabled>Selecciona un deporte</option>
-                  {commonSports.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
-                  <option value="Otro">Otro</option>
+                  {sportNames.filter((sport) => sport !== 'Otros').map((sport) => <option key={sport} value={sport}>{sport}</option>)}
+                  <option value="Otros">Otros</option>
                 </select>
-                <input type="text" required placeholder="Posición" value={posicion} onChange={(e) => setPosicion(e.target.value)} className="form-input" />
+                {disciplina && disciplina !== 'Otros' ? (
+                  <select required value={posicion} onChange={(e) => setPosicion(e.target.value)} className="form-input">
+                    <option value="" disabled>Selecciona posición / especialidad</option>
+                    {getSportDefinition(disciplina).specialties.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                ) : (
+                  <input type="text" required placeholder="Posición o especialidad" value={posicion} onChange={(e) => setPosicion(e.target.value)} className="form-input" />
+                )}
               </div>
-              {disciplina === 'Otro' && (
+              {disciplina === 'Otros' && (
                 <input type="text" required placeholder="Escribe tu deporte" value={deportePersonalizado} onChange={(e) => setDeportePersonalizado(e.target.value)} className="form-input mt-3" />
+              )}
+              {disciplina && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                  <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="form-input">
+                    <option value="">Categoría / modalidad</option>
+                    {getSportDefinition(disciplina).categories.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                  <select value={modalidadCompetencia} onChange={(e) => setModalidadCompetencia(e.target.value)} className="form-input">
+                    <option value="">Modo de competencia</option>
+                    {getSportDefinition(disciplina).competitionModes.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </div>
               )}
             </div>
           )}

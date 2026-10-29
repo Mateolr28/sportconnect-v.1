@@ -3,21 +3,7 @@ import { Camera, Plus, Save, Trash2, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { countries, getCities, getCountryByName, getRegions } from '../data/locationOptions';
 import { supabaseService } from '../services/supabaseService';
-
-const commonSports = [
-  'Fútbol',
-  'Baloncesto',
-  'Tenis',
-  'Atletismo',
-  'Natación',
-  'Ciclismo',
-  'Voleibol',
-  'Béisbol',
-  'Boxeo',
-  'Gimnasia',
-  'Rugby',
-  'Hockey',
-];
+import { achievementSuggestionsBySport, getSportDefinition, sportNames } from '../data/sports';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -43,11 +29,13 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   // Campos de atleta
   const [disciplina, setDisciplina] = useState(athleteProfile?.disciplina || '');
   const [deportePersonalizado, setDeportePersonalizado] = useState(
-    athleteProfile?.disciplina && !commonSports.includes(athleteProfile.disciplina)
+    athleteProfile?.disciplina && !sportNames.includes(athleteProfile.disciplina)
       ? athleteProfile.disciplina
       : ''
   );
   const [posicion, setPosicion] = useState(athleteProfile?.posicion || '');
+  const [categoria, setCategoria] = useState(athleteProfile?.categoria || '');
+  const [modalidadCompetencia, setModalidadCompetencia] = useState(athleteProfile?.modalidad_competencia || '');
   const [edad, setEdad] = useState(athleteProfile?.edad || 0);
   const [partidos, setPartidos] = useState(athleteProfile?.partidos ?? 0);
   const [goles, setGoles] = useState(athleteProfile?.goles ?? 0);
@@ -66,10 +54,23 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
   const [deportistasContactados, setDeportistasContactados] = useState(recruiterProfile?.deportistas_contactados || 150);
   const [contrataciones, setContrataciones] = useState(recruiterProfile?.contrataciones || 12);
   const [scoutsActivos, setScoutsActivos] = useState(recruiterProfile?.scouts_activos || 8);
+  const [tipoInstitucion, setTipoInstitucion] = useState(recruiterProfile?.tipo_institucion || '');
+  const [deportesBuscados, setDeportesBuscados] = useState((recruiterProfile?.deportes_buscados || []).join(', '));
+  const [categoriasBuscadas, setCategoriasBuscadas] = useState((recruiterProfile?.categorias_buscadas || []).join(', '));
+  const [perfilesBuscados, setPerfilesBuscados] = useState((recruiterProfile?.perfiles_buscados || []).join(', '));
+  const [filosofia, setFilosofia] = useState(recruiterProfile?.filosofia || '');
+  const [procesoSeleccion, setProcesoSeleccion] = useState(recruiterProfile?.proceso_seleccion || '');
+  const [beneficios, setBeneficios] = useState((recruiterProfile?.beneficios || []).join(', '));
+  const [sitioWeb, setSitioWeb] = useState(recruiterProfile?.sitio_web || '');
+  const [emailContacto, setEmailContacto] = useState(recruiterProfile?.email_contacto || '');
+  const [telefonoContacto, setTelefonoContacto] = useState(recruiterProfile?.telefono_contacto || '');
+  const [anioFundacion, setAnioFundacion] = useState(recruiterProfile?.anio_fundacion || '');
+  const [sedePrincipal, setSedePrincipal] = useState(recruiterProfile?.sede_principal || '');
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const selectedSport = (disciplina === 'Otro' ? deportePersonalizado : disciplina).toLowerCase();
+  const selectedSport = (disciplina === 'Otros' ? deportePersonalizado : disciplina).toLowerCase();
+  const achievementSuggestions = achievementSuggestionsBySport[disciplina] || [];
   const statLabels = selectedSport.includes('baloncesto')
     ? ['Partidos', 'Puntos', 'Asistencias']
     : selectedSport.includes('tenis')
@@ -144,8 +145,10 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
       if (profile.rol === 'deportista') {
         await updateAthleteProfile({
-          disciplina: disciplina === 'Otro' ? deportePersonalizado : disciplina,
+          disciplina: disciplina === 'Otros' ? deportePersonalizado : disciplina,
           posicion,
+          categoria,
+          modalidad_competencia: modalidadCompetencia,
           edad: Number(edad),
           partidos: Number(partidos),
           goles: Number(goles),
@@ -161,9 +164,21 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
       } else {
         await updateRecruiterProfile({
           nombre_club: nombreClub,
+          tipo_institucion: tipoInstitucion,
           deportistas_contactados: Number(deportistasContactados),
           contrataciones: Number(contrataciones),
           scouts_activos: Number(scoutsActivos),
+          perfiles_buscados: perfilesBuscados.split(',').map((item) => item.trim()).filter(Boolean),
+          deportes_buscados: deportesBuscados.split(',').map((item) => item.trim()).filter(Boolean),
+          categorias_buscadas: categoriasBuscadas.split(',').map((item) => item.trim()).filter(Boolean),
+          filosofia,
+          proceso_seleccion: procesoSeleccion,
+          beneficios: beneficios.split(',').map((item) => item.trim()).filter(Boolean),
+          sitio_web: sitioWeb,
+          email_contacto: emailContacto,
+          telefono_contacto: telefonoContacto,
+          anio_fundacion: anioFundacion ? Number(anioFundacion) : undefined,
+          sede_principal: sedePrincipal,
         });
       }
 
@@ -283,24 +298,47 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 <div>
                   <span className="text-[11px] text-slate-500 block mb-1">Deporte</span>
                   <select
-                    value={!disciplina ? '' : commonSports.includes(disciplina) ? disciplina : 'Otro'}
-                    onChange={(e) => setDisciplina(e.target.value === 'Otro' ? 'Otro' : e.target.value)}
+                    value={!disciplina ? '' : sportNames.includes(disciplina) ? disciplina : 'Otros'}
+                    onChange={(e) => { setDisciplina(e.target.value === 'Otros' ? 'Otros' : e.target.value); setPosicion(''); setCategoria(''); setModalidadCompetencia(''); }}
                     className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                   >
                     <option value="">Selecciona un deporte</option>
-                    {commonSports.map((sport) => <option key={sport} value={sport}>{sport}</option>)}
-                    <option value="Otro">Otro</option>
+                    {sportNames.filter((sport) => sport !== 'Otros').map((sport) => <option key={sport} value={sport}>{sport}</option>)}
+                    <option value="Otros">Otros</option>
                   </select>
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-500 block mb-1">Posición / especialidad</span>
-                  <input
-                    type="text"
-                    value={posicion}
-                    onChange={(e) => setPosicion(e.target.value)}
-                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
-                  />
+                  {disciplina && disciplina !== 'Otros' ? (
+                    <select
+                      value={posicion}
+                      onChange={(e) => setPosicion(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    >
+                      <option value="">Selecciona especialidad</option>
+                      {getSportDefinition(disciplina).specialties.map((item) => <option key={item} value={item}>{item}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={posicion}
+                      onChange={(e) => setPosicion(e.target.value)}
+                      className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+                    />
+                  )}
                 </div>
+                {disciplina && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                      <option value="">Categoría / modalidad</option>
+                      {getSportDefinition(disciplina).categories.map((item) => <option key={item} value={item}>{item}</option>)}
+                    </select>
+                    <select value={modalidadCompetencia} onChange={(e) => setModalidadCompetencia(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs">
+                      <option value="">Modo de competencia</option>
+                      {getSportDefinition(disciplina).competitionModes.map((item) => <option key={item} value={item}>{item}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <span className="text-[11px] text-slate-500 block mb-1">Edad</span>
                   <input
@@ -314,6 +352,20 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="text-[11px] text-slate-500 block mb-2">Logros destacados</label>
+                {achievementSuggestions.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {achievementSuggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => { if (!logros.includes(suggestion)) setLogros((current) => [...current, suggestion]); }}
+                        className="px-2.5 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 text-[11px] hover:bg-emerald-50"
+                      >
+                        + {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="space-y-2">
                   {logros.map((logro, index) => (
                     <div key={`${logro}-${index}`} className="flex items-center gap-2">
@@ -374,7 +426,7 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                 <input type="text" placeholder="Academia" value={academia} onChange={(e) => setAcademia(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
                 <input type="number" min="0" placeholder="Años de experiencia" value={experienciaAnios} onChange={(e) => setExperienciaAnios(Number(e.target.value))} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs" />
               </div>
-              {disciplina !== '' && (!commonSports.includes(disciplina) || disciplina === 'Otro') && (
+              {disciplina === 'Otros' && (
                 <input
                   type="text"
                   required
@@ -425,6 +477,14 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
               </h3>
 
               <div>
+                <span className="text-[11px] text-slate-500 block mb-1">Tipo de institución</span>
+                <select value={tipoInstitucion} onChange={(e) => setTipoInstitucion(e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                  <option value="">Selecciona el tipo</option>
+                  <option>Club profesional</option><option>Academia deportiva</option><option>Universidad</option><option>Federación</option><option>Agencia de representación</option><option>Club amateur</option>
+                </select>
+              </div>
+
+              <div>
                 <span className="text-[11px] text-slate-500 block mb-1">Nombre del Club</span>
                 <input
                   type="text"
@@ -432,6 +492,31 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({ isOpen, onCl
                   onChange={(e) => setNombreClub(e.target.value)}
                   className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
                 />
+              </div>
+
+              <div>
+                <span className="text-[11px] text-slate-500 block mb-1">Deportes que busca (separados por coma)</span>
+                <input type="text" value={deportesBuscados} onChange={(e) => setDeportesBuscados(e.target.value)} placeholder={sportNames.slice(0, 3).join(', ')} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-500 block mb-1">Categorías o perfiles de interés</span>
+                <input type="text" value={categoriasBuscadas} onChange={(e) => setCategoriasBuscadas(e.target.value)} placeholder="Sub-20, profesional, femenino..." className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <span className="text-[11px] text-slate-500 block mb-1">Perfiles específicos que busca</span>
+                <input type="text" value={perfilesBuscados} onChange={(e) => setPerfilesBuscados(e.target.value)} placeholder="Delanteros veloces, porteros..." className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="text" value={sedePrincipal} onChange={(e) => setSedePrincipal(e.target.value)} placeholder="Sede principal" className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                <input type="number" min="1800" max="2200" value={anioFundacion} onChange={(e) => setAnioFundacion(e.target.value)} placeholder="Año de fundación" className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              </div>
+              <textarea rows={2} value={filosofia} onChange={(e) => setFilosofia(e.target.value)} placeholder="Filosofía de scouting y desarrollo..." className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              <textarea rows={2} value={procesoSeleccion} onChange={(e) => setProcesoSeleccion(e.target.value)} placeholder="¿Cómo es el proceso de selección?" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              <input type="text" value={beneficios} onChange={(e) => setBeneficios(e.target.value)} placeholder="Beneficios separados por coma: beca, alojamiento, fisioterapia" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <input type="url" value={sitioWeb} onChange={(e) => setSitioWeb(e.target.value)} placeholder="Sitio web" className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                <input type="email" value={emailContacto} onChange={(e) => setEmailContacto(e.target.value)} placeholder="Email de contacto" className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
+                <input type="tel" value={telefonoContacto} onChange={(e) => setTelefonoContacto(e.target.value)} placeholder="Teléfono" className="border border-slate-200 rounded-xl px-3 py-2 text-sm" />
               </div>
 
               <div className="grid grid-cols-3 gap-3">
