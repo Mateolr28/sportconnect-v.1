@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, Video, MoreVertical, Send, Paperclip } from 'lucide-react';
+import { ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip } from 'lucide-react';
 import { Chat, Message } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { supabaseService } from '../services/supabaseService';
@@ -10,9 +10,10 @@ import { ProfileAvatar } from './ProfileAvatar';
 interface ChatWindowProps {
   chat: Chat | null;
   onMessageSent?: () => void;
+  onBack?: () => void;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onBack }) => {
   const { profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -100,10 +101,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent }) =
   }
 
   return (
-    <div className="flex-1 bg-[#F9FAFB] flex flex-col h-full overflow-hidden">
+    <div className="flex-1 min-w-0 bg-[#F9FAFB] flex flex-col h-full overflow-hidden">
       {/* 1. Header de la conversación activa */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-3.5">
+      <div className="bg-white border-b border-slate-200 px-3 md:px-6 py-3.5 flex items-center justify-between shadow-xs">
+        <div className="flex items-center gap-3.5 min-w-0">
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="md:hidden p-2 -ml-1 hover:bg-slate-100 rounded-full text-slate-600"
+              title="Volver"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
           <ProfileAvatar
             profile={otherUser}
             sizeClassName="w-10 h-10"
@@ -145,7 +156,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent }) =
       </div>
 
       {/* 2. Área de Mensajes */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
         {isLoading && messages.length === 0 ? (
           <div className="text-center py-8 text-xs text-slate-400">
             Cargando historial de mensajes...
@@ -175,7 +186,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent }) =
               placeholder="Escribe un mensaje..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all text-slate-900"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-10 py-3 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all text-slate-900"
             />
             <button
               type="button"

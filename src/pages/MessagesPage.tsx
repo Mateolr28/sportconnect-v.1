@@ -14,6 +14,8 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ initialChatId }) => 
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // En móvil se muestra una sola columna: la lista o el chat abierto
+  const [mobileChatOpen, setMobileChatOpen] = useState(!!initialChatId);
 
   const fetchChats = async () => {
     if (!profile) return;
@@ -44,7 +46,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ initialChatId }) => 
   }, [profile?.id, initialChatId]);
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
+    <div className="h-dvh flex flex-col bg-white overflow-hidden">
       {/* Encabezado superior */}
       <div className="px-6 py-4 border-b border-slate-200">
         <h1 className="text-xl font-bold text-slate-900 tracking-tight">Mensajes</h1>
@@ -53,14 +55,25 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({ initialChatId }) => 
       {/* Contenedor de dos columnas */}
       <div className="flex-1 flex overflow-hidden">
         {/* Columna Izquierda: Lista de chats */}
-        <ChatList
-          chats={chats}
-          selectedChatId={selectedChat?.id || null}
-          onSelectChat={(c) => setSelectedChat(c)}
-        />
+        <div className={`${mobileChatOpen ? 'hidden' : 'flex'} md:flex w-full md:w-auto h-full`}>
+          <ChatList
+            chats={chats}
+            selectedChatId={selectedChat?.id || null}
+            onSelectChat={(c) => {
+              setSelectedChat(c);
+              setMobileChatOpen(true);
+            }}
+          />
+        </div>
 
         {/* Columna Derecha: Ventana del chat activo */}
-        <ChatWindow chat={selectedChat} onMessageSent={fetchChats} />
+        <div className={`${mobileChatOpen ? 'flex' : 'hidden'} md:flex flex-1 min-w-0 h-full`}>
+          <ChatWindow
+            chat={selectedChat}
+            onMessageSent={fetchChats}
+            onBack={() => setMobileChatOpen(false)}
+          />
+        </div>
       </div>
     </div>
   );
