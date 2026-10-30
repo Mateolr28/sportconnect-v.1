@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Dumbbell, AlertCircle } from 'lucide-react';
+import { Dumbbell, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { UserRole } from '../types';
 import { countries, getCities, getCountryByName, getRegions } from '../data/locationOptions';
 import { getSportDefinition, sportNames } from '../data/sports';
+import { evaluatePassword, PASSWORD_MAX_LENGTH } from '../lib/passwordPolicy';
 
 interface RegisterPageProps {
   onNavigateToLogin: () => void;
@@ -30,6 +31,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const [modalidadCompetencia, setModalidadCompetencia] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rol, setRol] = useState<UserRole>('deportista');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -39,6 +42,13 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
   const availableCities = selectedCountry && selectedRegion
     ? getCities(selectedCountry.code, selectedRegion.code)
     : [];
+
+  const passwordEval = evaluatePassword(password, {
+    email,
+    names: [primerNombre, segundoNombre, primerApellido, segundoApellido],
+  });
+  const passwordsMatch = password === confirmPassword;
+  const strengthColors = ['bg-slate-200', 'bg-red-500', 'bg-amber-500', 'bg-lime-500', 'bg-emerald-600'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,14 +60,21 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
       !ciudadNacimiento.trim() ||
       !email.trim() ||
       !password ||
+      !confirmPassword ||
       (rol === 'deportista' && (!edad || (!disciplina.trim() && !deportePersonalizado.trim()) || !posicion.trim()))
     ) {
       setErrorMsg('Por favor completa todos los campos.');
       return;
     }
 
-    if (password.length < 6) {
-      setErrorMsg('La contraseña debe tener al menos 6 caracteres.');
+    if (!passwordEval.valid) {
+      const missing = passwordEval.checks.filter((check) => !check.ok).map((check) => check.label.toLowerCase());
+      setErrorMsg(`La contraseña no cumple los requisitos de seguridad: ${missing.join('; ')}.`);
+      return;
+    }
+
+    if (!passwordsMatch) {
+      setErrorMsg('Las contraseñas no coinciden. Escríbelas de nuevo.');
       return;
     }
 
@@ -201,17 +218,79 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+            <label htmlFor="register-password" className="block text-xs font-bold text-slate-700 mb-1.5">
               Contraseña
             </label>
+            <div className="relative">
+              <input
+                id="register-password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                autoComplete="new-password"
+                maxLength={PASSWORD_MAX_LENGTH}
+                placeholder="Crea una contraseña segura"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 pr-11 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? 'Ocultar contraseñas' : 'Mostrar contraseñas'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {password && (
+              <div className="mt-2.5 space-y-2" aria-live="polite">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 grid grid-cols-4 gap-1">
+                    {[1, 2, 3, 4].map((level) => (
+                      <span
+                        key={level}
+                        className={`h-1.5 rounded-full transition-colors ${passwordEval.score >= level ? strengthColors[passwordEval.score] : 'bg-slate-200'}`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-600 w-12 text-right">{passwordEval.label}</span>
+                </div>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                  {passwordEval.checks.map((check) => (
+                    <li key={check.id} className={`text-[11px] flex items-center gap-1.5 ${check.ok ? 'text-emerald-600' : 'text-slate-500'}`}>
+                      <span aria-hidden="true" className="w-3 text-center font-bold">{check.ok ? '✓' : '•'}</span>
+                      {check.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="register-password-confirm" className="block text-xs font-bold text-slate-700 mb-1.5">
+              Repite la contraseña
+            </label>
             <input
-              type="password"
+              id="register-password-confirm"
+              type={showPassword ? 'text' : 'password'}
               required
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-50/80 border border-slate-200 rounded-xl px-4 py-3 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all"
+              autoComplete="new-password"
+              maxLength={PASSWORD_MAX_LENGTH}
+              placeholder="Escríbela otra vez"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              aria-invalid={confirmPassword.length > 0 && !passwordsMatch}
+              className={`w-full bg-slate-50/80 border rounded-xl px-4 py-3 text-xs md:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:bg-white transition-all ${
+                confirmPassword.length > 0 && !passwordsMatch ? 'border-red-300 focus:ring-red-400' : 'border-slate-200 focus:ring-[#1E3A8A]'
+              }`}
             />
+            {confirmPassword.length > 0 && (
+              <p className={`mt-1.5 text-[11px] font-medium ${passwordsMatch ? 'text-emerald-600' : 'text-red-600'}`} aria-live="polite">
+                {passwordsMatch ? '✓ Las contraseñas coinciden' : 'Las contraseñas no coinciden'}
+              </p>
+            )}
           </div>
 
           {/* Selector visual de Tipo de cuenta */}
@@ -257,7 +336,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({
           {/* Botón Verde Registrarse #10B981 */}
           <button
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !passwordEval.valid || !passwordsMatch || !confirmPassword}
             className="w-full bg-[#10B981] hover:bg-emerald-600 active:scale-[0.99] text-white font-semibold py-3 px-4 rounded-xl text-sm transition-all shadow-sm disabled:opacity-50 mt-2"
           >
             {isLoading ? 'Creando cuenta...' : 'Registrarse'}
