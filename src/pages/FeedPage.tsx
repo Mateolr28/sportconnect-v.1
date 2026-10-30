@@ -29,8 +29,8 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<Post | null>(null);
 
-  const fetchPosts = async () => {
-    setIsLoading(true);
+  const fetchPosts = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       const data = await supabaseService.getPosts(filters);
       setPosts(data);
@@ -146,7 +146,7 @@ export const FeedPage: React.FC<FeedPageProps> = ({
       <CommentsModal
         post={selectedPostForComments}
         onClose={() => setSelectedPostForComments(null)}
-        onCommentAdded={fetchPosts}
+        onCommentAdded={() => fetchPosts(true)}
       />
     </div>
   );

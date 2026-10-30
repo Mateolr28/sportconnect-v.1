@@ -15,6 +15,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
   const [commentText, setCommentText] = useState('');
   const [comments, setComments] = useState<Comment[]>(post?.comments || []);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -45,6 +46,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
     if (!commentText.trim() || !profile) return;
 
     setIsSubmitting(true);
+    setError('');
     try {
       const newComment = await supabaseService.addComment(post.id, profile.id, commentText.trim(), profile);
       setComments((currentComments) => [...currentComments, newComment]);
@@ -52,6 +54,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
       if (onCommentAdded) onCommentAdded();
     } catch (err) {
       console.error('Error al agregar comentario:', err);
+      setError('No se pudo publicar el comentario. Inténtalo de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -60,9 +63,11 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
   const handleDelete = async (commentId: string) => {
     try {
       await supabaseService.deleteComment(commentId, post.id);
-      setComments(comments.filter((c) => c.id !== commentId));
+      setComments((current) => current.filter((c) => c.id !== commentId));
+      if (onCommentAdded) onCommentAdded();
     } catch (err) {
       console.error('Error al eliminar comentario:', err);
+      setError('No se pudo eliminar el comentario.');
     }
   };
 
@@ -94,8 +99,12 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
 
               return (
                 <div key={comment.id} className="flex items-start gap-3 group">
-                  <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
-                    {initials}
+                  <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden">
+                    {comment.autor?.avatar_url ? (
+                      <img src={comment.autor.avatar_url} alt={authorName} className="w-full h-full object-cover" />
+                    ) : (
+                      initials
+                    )}
                   </div>
                   <div className="flex-1 bg-slate-50 rounded-xl p-3 border border-slate-100">
                     <div className="flex items-center justify-between mb-1">
@@ -110,7 +119,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
                       {isMine && (
                         <button
                           onClick={() => handleDelete(comment.id)}
-                          className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"
+                          className="md:opacity-0 md:group-hover:opacity-100 text-slate-400 hover:text-red-500 transition-opacity"
                           title="Eliminar comentario"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -125,6 +134,8 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
           )}
         </div>
 
+        {error && <p className="px-4 py-2 text-xs text-red-600 bg-red-50 border-t border-red-100">{error}</p>}
+
         {/* Input para agregar comentario */}
         <form onSubmit={handleSubmit} className="p-3 border-t border-slate-100 flex items-center gap-2 bg-slate-50/50">
           <input
@@ -132,7 +143,7 @@ export const CommentsModal: React.FC<CommentsModalProps> = ({ post, onClose, onC
             placeholder="Escribe un comentario respetuoso..."
             value={commentText}
             onChange={(e) => setCommentText(e.target.value)}
-            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
+            className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:border-transparent"
           />
           <button
             type="submit"

@@ -235,7 +235,8 @@ export const supabaseService = {
           return { liked: true, count: post?.likes_count ?? 1 };
         }
       } catch (err) {
-        console.warn('Error gestionando like en Supabase, aplicando local:', err);
+        console.error('Error gestionando like en Supabase:', err);
+        throw err;
       }
     }
 
@@ -265,7 +266,9 @@ export const supabaseService = {
         if (error) throw error;
         return data as Comment;
       } catch (err) {
-        console.warn('Error añadiendo comentario en Supabase, aplicando local:', err);
+        // Con Supabase configurado no se simula el comentario: se informaría un guardado que no ocurrió.
+        console.error('Error añadiendo comentario en Supabase:', err);
+        throw err;
       }
     }
 
@@ -313,7 +316,8 @@ export const supabaseService = {
 
   async deleteComment(commentId: string, postId: string): Promise<void> {
     if (isSupabaseConfigured()) {
-      await supabase.from('comments').delete().eq('id', commentId);
+      const { error } = await supabase.from('comments').delete().eq('id', commentId);
+      if (error) throw error;
     }
     const post = localPosts.find((p) => p.id === postId);
     if (post && post.comments) {

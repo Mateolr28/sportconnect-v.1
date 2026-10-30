@@ -173,7 +173,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
               className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-[#1E3A8A] transition-colors"
             >
               <MessageCircle className="w-5 h-5" />
-              <span>{post.comments_count || (post.comments?.length ?? 0)}</span>
+              <span>{post.comments_count ?? post.comments?.length ?? 0}</span>
             </button>
           </div>
 
@@ -199,7 +199,7 @@ export const VideoCard: React.FC<VideoCardProps> = ({
             onClick={() => onOpenComments(post)}
             className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors block text-left"
           >
-            Ver los {post.comments_count || post.comments?.length || 2} comentarios
+            Ver los {post.comments_count ?? post.comments?.length ?? 0} comentarios
           </button>
         )}
 
