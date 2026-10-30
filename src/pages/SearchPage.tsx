@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import {
   Award,
   BadgeCheck,
-  BrainCircuit,
   Building2,
   ChevronDown,
   ChevronRight,
@@ -11,7 +10,6 @@ import {
   MapPin,
   Search,
   SlidersHorizontal,
-  Sparkles,
   Target,
   UserRound,
   X,
@@ -64,8 +62,6 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
   const [filters, setFilters] = useState<SearchFilters>(emptyFilters);
   const [draftFilters, setDraftFilters] = useState<SearchFilters>(emptyFilters);
   const [showFilters, setShowFilters] = useState(false);
-  const [isAiMode, setIsAiMode] = useState(false);
-  const [aiSummary, setAiSummary] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -155,24 +151,6 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
     });
   };
 
-  const handleAiSearch = () => {
-    const text = normalize(query);
-    const next = { ...emptyFilters };
-    const interpreted: string[] = [];
-    const sport = sports.find((item) => text.includes(normalize(item)));
-    if (sport) { next.sports = [sport]; interpreted.push(`⚽ ${sport}`); }
-    const position = Object.values(positionsBySport).flat().find((item) => text.includes(normalize(item)));
-    if (position) { next.positions = [position]; interpreted.push(`🎯 ${position}`); }
-    const ageMatch = text.match(/(?:menor de|sub[- ]?)\s*(\d+)/);
-    if (ageMatch) { next.ageRange = 'custom'; next.maxAge = String(Number(ageMatch[1]) - 1); interpreted.push(`🎂 Menor de ${ageMatch[1]} años`); }
-    const availability = availabilityOptions.find(([value, label]) => text.includes(normalize(label)) || text.includes(normalize(value.replace('_', ' '))));
-    if (availability) { next.availability = availability[0]; interpreted.push(`🟢 ${availability[1]}`); }
-    const location = athletes.map(({ profile }) => profile.ciudad_nacimiento || profile.ubicacion).find((item) => item && text.includes(normalize(item)));
-    if (location) { next.location = location; interpreted.push(`📍 ${location}`); }
-    setFilters(next);
-    setAiSummary(interpreted.length ? interpreted : ['No se detectaron filtros estructurados; se usará el texto completo.']);
-  };
-
   const activeFilterCount = filters.sports.length + filters.positions.length + filters.categories.length + [filters.ageRange, filters.location, filters.gender, filters.level, filters.availability, filters.club, filters.academy, filters.experience].filter(Boolean).length;
 
   return (
@@ -189,22 +167,19 @@ export const SearchPage: React.FC<SearchPageProps> = ({ onViewProfile, onContact
           </div>
           <div className="relative max-w-4xl">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && isAiMode) handleAiSearch(); }} className="w-full bg-white text-slate-900 rounded-2xl pl-14 pr-44 py-4 text-sm md:text-base shadow-xl outline-none placeholder:text-slate-400" placeholder="Busca deportistas, deportes, posiciones, clubes o talentos..." />
-            <button type="button" onClick={() => { setIsAiMode(!isAiMode); setAiSummary([]); }} className={`absolute right-2 top-2 bottom-2 rounded-xl px-3 md:px-4 text-xs font-bold flex items-center gap-2 transition-colors ${isAiMode ? 'bg-emerald-400 text-[#0b1426]' : 'bg-slate-100 text-slate-700 hover:bg-emerald-100'}`}><Sparkles className="w-4 h-4" /> <span className="hidden md:inline">Buscar con IA</span></button>
-            {suggestions.length > 0 && !isAiMode && (
+            <input value={query} onChange={(event) => setQuery(event.target.value)} className="w-full bg-white text-slate-900 rounded-2xl pl-14 pr-5 py-4 text-sm md:text-base shadow-xl outline-none placeholder:text-slate-400" placeholder="Busca deportistas, deportes, posiciones, clubes o talentos..." />
+            {suggestions.length > 0 && (
               <div className="absolute top-[calc(100%+8px)] left-0 right-0 z-20 bg-white rounded-2xl p-2 shadow-2xl border border-slate-200 text-slate-900">
-                {suggestions.map(({ profile, athlete }) => <button key={profile.id} type="button" onClick={() => { setQuery(profile.nombre); setAiSummary([]); }} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-left"><span className="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">{initials(profile.nombre)}</span><span className="flex-1"><strong className="block text-sm">{profile.nombre}</strong><small className="text-slate-500">Deportista · {athlete.disciplina} · {athlete.posicion}</small></span><ChevronRight className="w-4 h-4 text-slate-400" /></button>)}
+                {suggestions.map(({ profile, athlete }) => <button key={profile.id} type="button" onClick={() => setQuery(profile.nombre)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 text-left"><span className="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">{initials(profile.nombre)}</span><span className="flex-1"><strong className="block text-sm">{profile.nombre}</strong><small className="text-slate-500">Deportista · {athlete.disciplina} · {athlete.posicion}</small></span><ChevronRight className="w-4 h-4 text-slate-400" /></button>)}
                 <div className="border-t border-slate-100 mt-1 px-3 py-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">Deportistas</div>
-                {suggestionCategories.filter((category) => normalize(category).includes(normalize(query))).map((category) => <button key={category} type="button" onClick={() => { setQuery(category); setIsAiMode(false); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 text-left"><span className="w-8 h-8 rounded-lg bg-slate-100 text-[#1E3A8A] flex items-center justify-center"><Target className="w-4 h-4" /></span><span className="text-sm font-semibold">{category}</span><span className="ml-auto text-xs text-slate-400">Categoría</span></button>)}
+                {suggestionCategories.filter((category) => normalize(category).includes(normalize(query))).map((category) => <button key={category} type="button" onClick={() => setQuery(category)} className="w-full flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-slate-50 text-left"><span className="w-8 h-8 rounded-lg bg-slate-100 text-[#1E3A8A] flex items-center justify-center"><Target className="w-4 h-4" /></span><span className="text-sm font-semibold">{category}</span><span className="ml-auto text-xs text-slate-400">Categoría</span></button>)}
               </div>
             )}
           </div>
-          {isAiMode && <div className="mt-3 flex items-center gap-2 text-xs text-emerald-200"><BrainCircuit className="w-4 h-4" /> Escribe una necesidad en lenguaje natural y pulsa Enter o vuelve a tocar el botón.</div>}
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-5 md:px-10 py-7">
-        {aiSummary.length > 0 && <section className="mb-6 bg-white border border-emerald-200 rounded-2xl p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-emerald-700">Entendimos que buscas</p><div className="flex flex-wrap gap-2 mt-3">{aiSummary.map((item) => <span key={item} className="bg-emerald-50 text-emerald-800 px-3 py-1.5 rounded-lg text-xs font-semibold">{item}</span>)}</div></div><button type="button" onClick={() => { setAiSummary([]); setFilters(emptyFilters); }} className="text-xs text-slate-500 hover:text-slate-900">Limpiar interpretación</button></div></section>}
 
         <div className="flex flex-col lg:flex-row gap-7 items-start">
           <aside className={`w-full lg:w-72 shrink-0 ${showFilters ? 'block' : 'hidden lg:block'}`}>
