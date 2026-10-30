@@ -1,6 +1,8 @@
 import React from 'react';
 import { Building2, MapPin, Edit3, Target, Globe, Mail, Phone, CalendarDays, CheckCircle2 } from 'lucide-react';
 import { Profile, RecruiterProfile } from '../types';
+import { FollowButton } from './FollowButton';
+import { FollowStats, FollowListType } from './FollowStats';
 
 interface RecruiterProfileViewProps {
   profile: Profile;
@@ -9,6 +11,11 @@ interface RecruiterProfileViewProps {
   onEditProfile?: () => void;
   onFindAthletes?: () => void;
   onViewAthlete?: (athleteId: string) => void;
+  followers?: number;
+  following?: number;
+  isFollowing?: boolean;
+  onToggleFollow?: () => Promise<void> | void;
+  onOpenFollowList?: (type: FollowListType) => void;
 }
 
 export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
@@ -18,6 +25,11 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
   onEditProfile,
   onFindAthletes,
   onViewAthlete,
+  followers = 0,
+  following = 0,
+  isFollowing = false,
+  onToggleFollow,
+  onOpenFollowList,
 }) => {
   const wantedProfiles = recruiter?.perfiles_buscados || [];
 
@@ -54,6 +66,9 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
                     </span>
                   )}
                 </div>
+                <div className="mt-3">
+                  <FollowStats followers={followers} following={following} onOpenList={onOpenFollowList} />
+                </div>
               </div>
 
               {/* Botón Editar perfil */}
@@ -65,6 +80,9 @@ export const RecruiterProfileView: React.FC<RecruiterProfileViewProps> = ({
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>Editar perfil</span>
                 </button>
+              )}
+              {!isOwnProfile && onToggleFollow && (
+                <FollowButton variant="dark" isFollowing={isFollowing} onToggle={onToggleFollow} />
               )}
             </div>
 

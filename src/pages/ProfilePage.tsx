@@ -5,17 +5,21 @@ import { AthleteProfileView } from '../components/AthleteProfileView';
 import { RecruiterProfileView } from '../components/RecruiterProfileView';
 import { EditProfileModal } from '../components/EditProfileModal';
 import { supabaseService } from '../services/supabaseService';
+import { FollowListModal } from '../components/FollowListModal';
+import { FollowListType } from '../components/FollowStats';
 
 interface ProfilePageProps {
   viewingUserId?: string | null;
   onContactAthlete: (profile: Profile) => void;
   onNavigateToFeed: () => void;
+  onViewProfile?: (userId: string) => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   viewingUserId,
   onContactAthlete,
   onNavigateToFeed,
+  onViewProfile,
 }) => {
   const { profile: loggedInProfile, athleteProfile: loggedInAthlete, recruiterProfile: loggedInRecruiter } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -24,8 +28,56 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
   const [targetRecruiter, setTargetRecruiter] = useState<RecruiterProfile | null>(null);
   const [userPosts, setUserPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [counts, setCounts] = useState({ followers: 0, following: 0 });
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [openList, setOpenList] = useState<FollowListType | null>(null);
 
   const isOwnProfile = !viewingUserId || viewingUserId === loggedInProfile?.id;
+  const targetUserId = isOwnProfile ? loggedInProfile?.id : viewingUserId;
+
+  useEffect(() => {
+    if (!targetUserId) return;
+    let isMounted = true;
+    setOpenList(null);
+    Promise.all([
+      supabaseService.getFollowCounts(targetUserId),
+      loggedInProfile && !isOwnProfile
+        ? supabaseService.getFollowingIds(loggedInProfile.id)
+        : Promise.resolve([] as string[]),
+    ])
+      .then(([nextCounts, followingIds]) => {
+        if (!isMounted) return;
+        setCounts(nextCounts);
+        setIsFollowing(followingIds.includes(targetUserId));
+      })
+      .catch((err) => console.error('Error cargando seguidores:', err));
+    return () => {
+      isMounted = false;
+    };
+  }, [targetUserId, loggedInProfile?.id, isOwnProfile]);
+
+  const handleToggleFollow = async () => {
+    if (!loggedInProfile || !targetUserId || isOwnProfile) return;
+    const wasFollowing = isFollowing;
+    setIsFollowing(!wasFollowing);
+    setCounts((c) => ({ ...c, followers: Math.max(0, c.followers + (wasFollowing ? -1 : 1)) }));
+    try {
+      if (wasFollowing) await supabaseService.unfollowUser(loggedInProfile.id, targetUserId);
+      else await supabaseService.followUser(loggedInProfile.id, targetUserId);
+    } catch (err) {
+      console.error('Error al actualizar seguimiento:', err);
+      setIsFollowing(wasFollowing);
+      setCounts((c) => ({ ...c, followers: Math.max(0, c.followers + (wasFollowing ? 1 : -1)) }));
+    }
+  };
+
+  const followProps = {
+    followers: counts.followers,
+    following: counts.following,
+    isFollowing,
+    onToggleFollow: isOwnProfile ? undefined : handleToggleFollow,
+    onOpenFollowList: setOpenList,
+  };
 
   const handleDeletePost = async (post: Post) => {
     if (!isOwnProfile || !loggedInProfile) return;
@@ -91,6 +143,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           onEditProfile={() => setIsEditModalOpen(true)}
           onContactAthlete={onContactAthlete}
           onDeletePost={isOwnProfile ? handleDeletePost : undefined}
+          {...followProps}
         />
       ) : (
         <RecruiterProfileView
@@ -102,6 +155,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           onViewAthlete={(athId) => {
             // ver atleta desde reclutador
           }}
+          {...followProps}
+        />
+      )}
+
+      {openList && targetUserId && (
+        <FollowListModal
+          userId={targetUserId}
+          type={openList}
+          onClose={() => setOpenList(null)}
+          onViewProfile={(id) => onViewProfile?.(id)}
         />
       )}
 

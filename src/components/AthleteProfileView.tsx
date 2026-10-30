@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MapPin, Edit3, Trophy, Play, MessageCircle, Trash2 } from 'lucide-react';
 import { Profile, AthleteProfile, Post } from '../types';
 import { VideoPlayer } from './VideoPlayer';
+import { FollowButton } from './FollowButton';
+import { FollowStats, FollowListType } from './FollowStats';
 
 interface AthleteProfileViewProps {
   profile: Profile;
@@ -11,6 +13,11 @@ interface AthleteProfileViewProps {
   onEditProfile?: () => void;
   onContactAthlete?: (profile: Profile) => void;
   onDeletePost?: (post: Post) => Promise<void>;
+  followers?: number;
+  following?: number;
+  isFollowing?: boolean;
+  onToggleFollow?: () => Promise<void> | void;
+  onOpenFollowList?: (type: FollowListType) => void;
 }
 
 export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
@@ -21,6 +28,11 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
   onEditProfile,
   onContactAthlete,
   onDeletePost,
+  followers = 0,
+  following = 0,
+  isFollowing = false,
+  onToggleFollow,
+  onOpenFollowList,
 }) => {
   const [selectedVideo, setSelectedVideo] = useState<Post | null>(null);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
@@ -74,6 +86,9 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                     </span>
                   )}
                 </div>
+                <div className="mt-3">
+                  <FollowStats followers={followers} following={following} onOpenList={onOpenFollowList} />
+                </div>
               </div>
 
               {/* Botón de acción: Editar o Contactar */}
@@ -87,7 +102,11 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                     <span>Editar perfil</span>
                   </button>
                 ) : (
-                  onContactAthlete && (
+                  <>
+                  {onToggleFollow && (
+                    <FollowButton variant="dark" isFollowing={isFollowing} onToggle={onToggleFollow} />
+                  )}
+                  {onContactAthlete && (
                     <button
                       onClick={() => onContactAthlete(profile)}
                       className="flex items-center gap-2 px-5 py-2.5 bg-[#10B981] hover:bg-emerald-600 text-white rounded-xl text-xs font-semibold transition-colors shadow-md"
@@ -95,7 +114,8 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                       <MessageCircle className="w-4 h-4" />
                       <span>Contactar deportista</span>
                     </button>
-                  )
+                  )}
+                  </>
                 )}
               </div>
             </div>

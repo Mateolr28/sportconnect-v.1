@@ -12,7 +12,7 @@ import { SupabaseInfoModal } from './components/SupabaseInfoModal';
 import { supabaseService } from './services/supabaseService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Profile } from './types';
-import { Home, User, Upload, MessageCircle, Search } from 'lucide-react';
+import { Home, User, Upload, MessageCircle, Search, Compass } from 'lucide-react';
 
 function AppContent() {
   const { user, profile, isLoading } = useAuth();
@@ -152,6 +152,17 @@ function AppContent() {
             onContactAthlete={handleContactAthlete}
             onViewProfile={handleViewProfile}
             onNavigateToUpload={() => setCurrentTab('subir')}
+            onNavigateToTalents={() => setCurrentTab('talentos')}
+            mode="following"
+          />
+        )}
+
+        {currentTab === 'talentos' && (
+          <FeedPage
+            onContactAthlete={handleContactAthlete}
+            onViewProfile={handleViewProfile}
+            onNavigateToUpload={() => setCurrentTab('subir')}
+            mode="all"
           />
         )}
 
@@ -167,6 +178,7 @@ function AppContent() {
             viewingUserId={viewingUserId}
             onContactAthlete={handleContactAthlete}
             onNavigateToFeed={() => setCurrentTab('inicio')}
+            onViewProfile={handleViewProfile}
           />
         )}
 
@@ -187,6 +199,7 @@ function AppContent() {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center justify-around py-2.5 z-40 shadow-lg">
         {[
           { id: 'inicio', label: 'Inicio', icon: Home },
+          { id: 'talentos', label: 'Talentos', icon: Compass },
           { id: 'descubrir', label: 'Descubrir', icon: Search },
           { id: 'perfil', label: 'Perfil', icon: User },
           { id: 'subir', label: 'Subir', icon: Upload },

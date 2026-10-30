@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, User, Upload, MessageCircle, LogOut, Dumbbell, Search } from 'lucide-react';
+import { Home, User, Upload, MessageCircle, LogOut, Dumbbell, Search, Compass } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SidebarProps {
@@ -13,6 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onSelectTab, unrea
 
   const navItems = [
     { id: 'inicio', label: 'Inicio', icon: Home },
+    { id: 'talentos', label: 'Talentos', icon: Compass },
     { id: 'descubrir', label: 'Descubrir', icon: Search },
     { id: 'perfil', label: 'Perfil', icon: User },
     { id: 'subir', label: 'Publicar', icon: Upload },

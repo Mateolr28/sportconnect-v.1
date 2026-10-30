@@ -1,3 +1,4 @@
+import { FollowButton } from './FollowButton';
 import React, { useState } from 'react';
 import { Heart, MessageCircle, Send } from 'lucide-react';
 import { Post, Profile } from '../types';
@@ -33,6 +34,8 @@ interface VideoCardProps {
   onOpenComments: (post: Post) => void;
   onContactAthlete: (athleteUser: Profile) => void;
   onViewProfile?: (userId: string) => void;
+  isFollowing?: boolean;
+  onToggleFollow?: (userId: string) => Promise<void> | void;
 }
 
 export const VideoCard: React.FC<VideoCardProps> = ({
@@ -40,6 +43,8 @@ export const VideoCard: React.FC<VideoCardProps> = ({
   onOpenComments,
   onContactAthlete,
   onViewProfile,
+  isFollowing = false,
+  onToggleFollow,
 }) => {
   const { profile } = useAuth();
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
@@ -129,6 +134,13 @@ export const VideoCard: React.FC<VideoCardProps> = ({
           </div>
         </div>
 
+        {onToggleFollow && post.user_id && post.user_id !== profile?.id && (
+          <FollowButton
+            compact
+            isFollowing={isFollowing}
+            onToggle={() => onToggleFollow(post.user_id)}
+          />
+        )}
       </div>
 
       {/* 2. Contenido multimedia */}
