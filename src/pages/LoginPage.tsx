@@ -4,11 +4,13 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface LoginPageProps {
   onNavigateToRegister: () => void;
+  onNavigateToForgot: () => void;
   onLoginSuccess: () => void;
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({
   onNavigateToRegister,
+  onNavigateToForgot,
   onLoginSuccess,
 }) => {
   const { login } = useAuth();
@@ -92,6 +94,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <div className="text-right mt-2">
+              <button
+                type="button"
+                onClick={onNavigateToForgot}
+                className="text-xs font-semibold text-[#1E3A8A] hover:underline"
+              >
+                ¿Olvidaste tu contraseña?
               </button>
             </div>
           </div>

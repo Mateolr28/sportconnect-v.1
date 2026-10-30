@@ -9,6 +9,8 @@ interface AuthContextType {
   recruiterProfile: RecruiterProfile | null;
   isLoading: boolean;
   isConfigured: boolean;
+  /** true cuando el usuario llegó desde el enlace del correo y debe elegir una contraseña nueva */
+  isRecovering: boolean;
   login: (email: string, password: string) => Promise<{ error: Error | null }>;
   register: (data: {
     primer_nombre: string;
@@ -28,6 +30,9 @@ interface AuthContextType {
     modalidad_competencia?: string;
   }) => Promise<{ error: Error | null }>;
   logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  cancelRecovery: () => Promise<void>;
   updateProfile: (updatedData: Partial<Profile>) => Promise<void>;
   updateAthleteProfile: (updatedData: Partial<AthleteProfile>) => Promise<void>;
   updateRecruiterProfile: (updatedData: Partial<RecruiterProfile>) => Promise<void>;
@@ -41,6 +46,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [athleteProfile, setAthleteProfile] = useState<AthleteProfile | null>(null);
   const [recruiterProfile, setRecruiterProfile] = useState<RecruiterProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // El enlace de recuperación llega con type=recovery en la URL; también lo avisa el evento PASSWORD_RECOVERY
+  const [isRecovering, setIsRecovering] = useState<boolean>(
+    () => typeof window !== 'undefined' && /type=recovery/.test(window.location.hash + window.location.search)
+  );
   const configured = isSupabaseConfigured();
 
   // Cargar sesión inicial
@@ -76,7 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Escuchar cambios de autenticación en Supabase
     if (configured) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') setIsRecovering(true);
         if (session?.user) {
           setUser(session.user);
           await fetchProfileData(session.user.id);
@@ -283,6 +293,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Enviar el correo de recuperación (la respuesta no revela si el correo existe)
+  const requestPasswordReset = async (email: string) => {
+    if (!configured) {
+      return { error: new Error('Supabase no está configurado. No se puede enviar el correo de recuperación.') };
+    }
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: window.location.origin,
+      });
+      if (error) {
+        if (error.status === 429) {
+          return { error: new Error('Solicitaste demasiados correos seguidos. Espera unos minutos antes de intentarlo de nuevo.') };
+        }
+        return { error: new Error(error.message) };
+      }
+      return { error: null };
+    } catch (err) {
+      console.error('No se pudo solicitar la recuperación de contraseña:', err);
+      return { error: new Error('No se pudo conectar con Supabase. Revisa tu conexión e inténtalo de nuevo.') };
+    }
+  };
+
+  // Guardar la contraseña nueva durante la sesión de recuperación
+  const updatePassword = async (newPassword: string) => {
+    if (!configured) return { error: new Error('Supabase no está configurado.') };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      const message = /different from the old password/i.test(error.message)
+        ? 'La contraseña nueva debe ser distinta de la anterior.'
+        : /expired|session/i.test(error.message)
+          ? 'El enlace de recuperación venció. Solicita uno nuevo.'
+          : error.message;
+      return { error: new Error(message) };
+    }
+    // Cierra las demás sesiones abiertas con la contraseña anterior
+    await supabase.auth.signOut({ scope: 'others' }).catch(() => undefined);
+    setIsRecovering(false);
+    // Limpia el token de la URL para que no se reutilice al recargar
+    if (typeof window !== 'undefined') window.history.replaceState({}, document.title, window.location.pathname);
+    return { error: null };
+  };
+
+  // Abandonar la recuperación sin cambiar la contraseña
+  const cancelRecovery = async () => {
+    setIsRecovering(false);
+    if (typeof window !== 'undefined') window.history.replaceState({}, document.title, window.location.pathname);
+    if (configured) await supabase.auth.signOut();
+    setUser(null);
+    setProfile(null);
+    setAthleteProfile(null);
+    setRecruiterProfile(null);
+  };
+
   // Cerrar sesión
   const logout = async () => {
     if (configured) {
@@ -337,9 +400,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         recruiterProfile,
         isLoading,
         isConfigured: configured,
+        isRecovering,
         login,
         register,
         logout,
+        requestPasswordReset,
+        updatePassword,
+        cancelRecovery,
         updateProfile,
         updateAthleteProfile,
         updateRecruiterProfile,

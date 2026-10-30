@@ -8,6 +8,8 @@ import { MessagesPage } from './pages/MessagesPage';
 import { SearchPage } from './pages/SearchPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { SupabaseInfoModal } from './components/SupabaseInfoModal';
 import { supabaseService } from './services/supabaseService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
@@ -15,8 +17,11 @@ import { Profile } from './types';
 import { Home, User, Upload, MessageCircle, Search, Compass } from 'lucide-react';
 
 function AppContent() {
-  const { user, profile, isLoading } = useAuth();
-  const [authView, setAuthView] = useState<'login' | 'register'>('login');
+  const { user, profile, isLoading, isRecovering } = useAuth();
+  const [authView, setAuthView] = useState<'login' | 'register' | 'forgot'>(
+    // Un enlace de recuperación vencido o ya usado llega con error en la URL: se ofrece pedir otro
+    () => (typeof window !== 'undefined' && /error_code=otp_expired/.test(window.location.hash) ? 'forgot' : 'login')
+  );
   const [currentTab, setCurrentTab] = useState<string>('inicio');
   const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -92,6 +97,11 @@ function AppContent() {
     );
   }
 
+  // Llegó desde el enlace del correo: debe elegir una contraseña nueva antes de entrar
+  if (isRecovering && user) {
+    return <ResetPasswordPage />;
+  }
+
   // Si no hay usuario autenticado, mostrar Login o Registro
   if (!user || !profile) {
     if (authView === 'register') {
@@ -102,9 +112,16 @@ function AppContent() {
         />
       );
     }
+    if (authView === 'forgot') {
+      return <ForgotPasswordPage
+          onBackToLogin={() => setAuthView('login')}
+          linkExpired={typeof window !== 'undefined' && /error_code=otp_expired/.test(window.location.hash)}
+        />;
+    }
     return (
       <LoginPage
         onNavigateToRegister={() => setAuthView('register')}
+        onNavigateToForgot={() => setAuthView('forgot')}
         onLoginSuccess={() => setCurrentTab('inicio')}
       />
     );
