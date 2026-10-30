@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { Chat } from '../types';
+import { ProfileAvatar } from './ProfileAvatar';
 
 interface ChatListProps {
   chats: Chat[];
@@ -19,13 +20,6 @@ export const ChatList: React.FC<ChatListProps> = ({
     const name = c.other_participant?.nombre || '';
     return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
-
-  const getInitials = (name?: string) => {
-    if (!name) return 'SC';
-    const parts = name.trim().split(' ');
-    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  };
 
   const getAvatarBg = (index: number) => {
     const colors = ['bg-[#0d9488]', 'bg-[#1E3A8A]', 'bg-[#0f766e]', 'bg-[#1e40af]'];
@@ -73,16 +67,13 @@ export const ChatList: React.FC<ChatListProps> = ({
                     : 'hover:bg-slate-50'
                 }`}
               >
-                {/* Avatar circular con iniciales */}
-                <div
-                  className={`w-11 h-11 rounded-full text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0 relative ${getAvatarBg(
-                    idx
-                  )}`}
-                >
-                  {getInitials(name)}
-                  {/* Punto verde indicador en línea */}
-                  <span className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-[#10B981] border-2 border-white" />
-                </div>
+                <ProfileAvatar
+                  profile={chat.other_participant}
+                  sizeClassName="w-11 h-11"
+                  textClassName="text-xs"
+                  backgroundClassName={getAvatarBg(idx)}
+                  statusClassName="w-3 h-3"
+                />
 
                 {/* Contenido info y snippet */}
                 <div className="flex-1 min-w-0">

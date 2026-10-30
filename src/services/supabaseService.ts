@@ -464,46 +464,23 @@ export const supabaseService = {
   async getOrCreateChat(currentUserId: string, targetUserId: string, targetProfile?: Profile): Promise<Chat> {
     if (isSupabaseConfigured()) {
       try {
-        // Buscar chat existente compartido
-        const { data: myChats } = await supabase
-          .from('chat_participants')
-          .select('chat_id')
-          .eq('user_id', currentUserId);
+        // Buscar o crear el chat en el servidor (RLS no permite insertar participantes directamente)
+        const { data: chatId, error: rpcErr } = await supabase.rpc('get_or_create_chat', {
+          p_target_user_id: targetUserId,
+        });
+        if (rpcErr) throw rpcErr;
 
-        if (myChats && myChats.length > 0) {
-          const chatIds = myChats.map((c) => c.chat_id);
-          const { data: match } = await supabase
-            .from('chat_participants')
-            .select('chat_id')
-            .in('chat_id', chatIds)
-            .eq('user_id', targetUserId)
-            .maybeSingle();
-
-          if (match) {
-            const { data: chatData } = await supabase.from('chats').select('*').eq('id', match.chat_id).single();
-            return {
-              id: match.chat_id,
-              created_at: chatData.created_at,
-              updated_at: chatData.updated_at,
-              other_participant: targetProfile,
-            };
-          }
-        }
-
-        // Crear nuevo chat
-        const { data: newChat, error: chatErr } = await supabase.from('chats').insert({}).select().single();
+        const { data: chatData, error: chatErr } = await supabase
+          .from('chats')
+          .select('*')
+          .eq('id', chatId)
+          .single();
         if (chatErr) throw chatErr;
 
-        // Añadir participantes
-        await supabase.from('chat_participants').insert([
-          { chat_id: newChat.id, user_id: currentUserId },
-          { chat_id: newChat.id, user_id: targetUserId },
-        ]);
-
         return {
-          id: newChat.id,
-          created_at: newChat.created_at,
-          updated_at: newChat.updated_at,
+          id: chatData.id,
+          created_at: chatData.created_at,
+          updated_at: chatData.updated_at,
           other_participant: targetProfile,
         };
       } catch (err) {

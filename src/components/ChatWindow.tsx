@@ -5,6 +5,7 @@ import { MessageBubble } from './MessageBubble';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { ProfileAvatar } from './ProfileAvatar';
 
 interface ChatWindowProps {
   chat: Chat | null;
@@ -20,13 +21,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent }) =
 
   const otherUser = chat?.other_participant;
   const otherName = otherUser?.nombre || 'Contacto';
-  const otherInitials = otherName
-    .split(' ')
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
   // Cargar mensajes iniciales y marcar como leídos
   useEffect(() => {
     if (!chat) return;
@@ -110,10 +104,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent }) =
       {/* 1. Header de la conversación activa */}
       <div className="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-full bg-[#0d9488] text-white flex items-center justify-center font-bold text-sm shadow-sm relative">
-            {otherInitials}
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#10B981] border-2 border-white" />
-          </div>
+          <ProfileAvatar
+            profile={otherUser}
+            sizeClassName="w-10 h-10"
+            textClassName="text-sm"
+            statusClassName="w-2.5 h-2.5"
+          />
           <div>
             <h3 className="font-bold text-slate-900 text-sm">{otherName}</h3>
             <span className="text-xs text-[#10B981] font-medium flex items-center gap-1">
