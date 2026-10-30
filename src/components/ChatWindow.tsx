@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Phone, Video, MoreVertical, Send, Paperclip } from 'lucide-react';
+import { ArrowLeft, MoreVertical, Send } from 'lucide-react';
 import { Chat, Message } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { supabaseService } from '../services/supabaseService';
@@ -133,20 +133,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
         {/* Acciones del chat: Llamada, Videollamada, Opciones */}
         <div className="flex items-center gap-1 text-slate-500">
           <button
-            onClick={() => alert(`Iniciando llamada con ${otherName}`)}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-            title="Llamar"
-          >
-            <Phone className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => alert(`Iniciando videollamada con ${otherName}`)}
-            className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-            title="Videollamada"
-          >
-            <Video className="w-4 h-4" />
-          </button>
-          <button
             className="p-2 hover:bg-slate-100 rounded-full transition-colors"
             title="Más opciones"
           >
@@ -186,15 +172,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
               placeholder="Escribe un mensaje..."
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-4 pr-10 py-3 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all text-slate-900"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] focus:bg-white transition-all text-slate-900"
             />
-            <button
-              type="button"
-              className="absolute right-3 text-slate-400 hover:text-slate-600 p-1"
-              title="Adjuntar archivo deportivo"
-            >
-              <Paperclip className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Botón enviar en verde esmeralda #10B981 */}
