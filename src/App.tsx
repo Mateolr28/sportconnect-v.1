@@ -6,6 +6,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { UploadPage } from './pages/UploadPage';
 import { MessagesPage } from './pages/MessagesPage';
 import { SearchPage } from './pages/SearchPage';
+import { ProspectsPage } from './pages/ProspectsPage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -14,7 +15,7 @@ import { SupabaseInfoModal } from './components/SupabaseInfoModal';
 import { supabaseService } from './services/supabaseService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Profile } from './types';
-import { Home, User, Upload, MessageCircle, Search, Compass } from 'lucide-react';
+import { Home, User, Upload, MessageCircle, Search, Compass, Bookmark } from 'lucide-react';
 
 function AppContent() {
   const { user, profile, isLoading, isRecovering } = useAuth();
@@ -190,6 +191,13 @@ function AppContent() {
           />
         )}
 
+        {currentTab === 'prospectos' && profile.rol === 'reclutador' && (
+          <ProspectsPage
+            onViewProfile={handleViewProfile}
+            onContactAthlete={handleContactAthlete}
+          />
+        )}
+
         {currentTab === 'perfil' && (
           <ProfilePage
             viewingUserId={viewingUserId}
@@ -218,6 +226,7 @@ function AppContent() {
           { id: 'inicio', label: 'Inicio', icon: Home },
           { id: 'talentos', label: 'Talentos', icon: Compass },
           { id: 'descubrir', label: 'Descubrir', icon: Search },
+          ...(profile.rol === 'reclutador' ? [{ id: 'prospectos', label: 'Prospectos', icon: Bookmark }] : []),
           { id: 'perfil', label: 'Perfil', icon: User },
           { id: 'subir', label: 'Subir', icon: Upload },
           { id: 'mensajes', label: 'Mensajes', icon: MessageCircle },

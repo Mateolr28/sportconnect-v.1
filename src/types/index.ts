@@ -138,6 +138,32 @@ export interface Chat {
   participants?: Profile[];
 }
 
+export type SportsHistoryType = 'equipo' | 'torneo';
+
+export interface SportsHistoryEntry {
+  id: string;
+  user_id: string;
+  tipo: SportsHistoryType;
+  titulo: string;
+  detalle?: string | null;
+  fecha_inicio: string;
+  fecha_fin?: string | null;
+  created_at?: string;
+}
+
+export type ProspectStatus = 'interesado' | 'contactado' | 'en_pruebas' | 'fichado' | 'descartado';
+
+export interface Prospect {
+  recruiter_id: string;
+  athlete_id: string;
+  estado: ProspectStatus;
+  notas?: string | null;
+  created_at: string;
+  updated_at: string;
+  athlete_profile?: Profile;
+  athlete?: AthleteProfile | null;
+}
+
 export interface FeedFilters {
   searchQuery: string;
   deporte: string;

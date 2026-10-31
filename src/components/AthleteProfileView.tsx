@@ -4,6 +4,8 @@ import { Profile, AthleteProfile, Post } from '../types';
 import { VideoPlayer } from './VideoPlayer';
 import { FollowButton } from './FollowButton';
 import { FollowStats, FollowListType } from './FollowStats';
+import { SportsHistorySection } from './SportsHistorySection';
+import { ProspectButton } from './ProspectButton';
 
 interface AthleteProfileViewProps {
   profile: Profile;
@@ -106,6 +108,7 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
                   {onToggleFollow && (
                     <FollowButton variant="dark" isFollowing={isFollowing} onToggle={onToggleFollow} />
                   )}
+                  <ProspectButton athleteId={profile.id} />
                   {onContactAthlete && (
                     <button
                       onClick={() => onContactAthlete(profile)}
@@ -196,6 +199,9 @@ export const AthleteProfileView: React.FC<AthleteProfileViewProps> = ({
             ))}
           </div>
       </section>}
+
+      {/* Sección: Historial deportivo */}
+      <SportsHistorySection userId={profile.id} isOwnProfile={isOwnProfile} />
 
       {/* 3. Sección: Galería de videos */}
       <section className="space-y-4">
