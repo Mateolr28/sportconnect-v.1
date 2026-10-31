@@ -58,7 +58,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
           },
           (payload) => {
             const newMsg = payload.new as Message;
-            setMessages((prev) => [...prev, newMsg]);
+            setMessages((prev) => (prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]));
           }
         )
         .subscribe();
@@ -85,7 +85,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
     try {
       const newMsg = await supabaseService.sendMessage(chat.id, profile.id, text);
       // Actualizar mensajes localmente de forma inmediata
-      setMessages((prev) => [...prev, newMsg]);
+      setMessages((prev) => (prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]));
       if (onMessageSent) onMessageSent();
     } catch (err) {
       console.error('Error enviando mensaje:', err);
