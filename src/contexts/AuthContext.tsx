@@ -240,7 +240,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
 
+        if (error.code === 'user_already_exists' || /already registered/i.test(error.message)) {
+          return { error: new Error('Este correo ya está registrado. Inicia sesión o recupera tu contraseña.') };
+        }
+
         return { error: new Error(error.message) };
+      }
+
+      // Con confirmación de email activa, Supabase no devuelve error para un correo existente:
+      // responde con un usuario sin identidades para no revelar qué correos están registrados.
+      if (data.user && data.user.identities?.length === 0) {
+        return { error: new Error('Este correo ya está registrado. Inicia sesión o recupera tu contraseña.') };
       }
 
       if (data.user) {
