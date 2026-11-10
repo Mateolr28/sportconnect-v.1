@@ -5,40 +5,99 @@ import { postMatchesFilters } from '../lib/postFilters';
 // Estado local reactivo cuando opera en modo offline / pre-configuración
 let localPosts: Post[] = [];
 
+export interface PostsQuery {
+  /** Limita los resultados a estos autores. Una lista vacía no devuelve nada. */
+  userIds?: string[];
+  offset?: number;
+  limit?: number;
+}
+
+export interface PostsPage {
+  posts: Post[];
+  /** Posición desde la que pedir la página siguiente. */
+  nextOffset: number;
+  hasMore: boolean;
+}
+
+export const POSTS_PAGE_SIZE = 10;
+
+// Trae una página de posts ya ordenada. Devuelve también cuántas filas leyó,
+// porque los filtros de texto se aplican después y pueden descartar algunas.
+const fetchPostRows = async ({ userIds, offset, limit }: PostsQuery): Promise<{ rows: Post[]; read: number }> => {
+  if (userIds && userIds.length === 0) return { rows: [], read: 0 };
+
+  let query = supabase
+    .from('posts')
+    .select(`
+      *,
+      autor:profiles(*, athlete_profile:athlete_profiles(*)),
+      comments(*, autor:profiles(nombre, avatar_url, rol))
+    `)
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false });
+
+  if (userIds) query = query.in('user_id', userIds);
+  if (limit !== undefined) {
+    const from = offset ?? 0;
+    query = query.range(from, from + limit - 1);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const rows = ((data as any[]) || []).map((post) => {
+    const athleteProfile = Array.isArray(post.autor?.athlete_profile)
+      ? post.autor.athlete_profile[0]
+      : post.autor?.athlete_profile;
+
+    return {
+      ...post,
+      athlete_info: post.athlete_info || athleteProfile || undefined,
+    };
+  }) as Post[];
+
+  return { rows, read: rows.length };
+};
+
+const localPostRows = ({ userIds }: PostsQuery) =>
+  userIds ? localPosts.filter((post) => userIds.includes(post.user_id)) : localPosts;
+
 export const postsService = {
-  async getPosts(filters?: FeedFilters): Promise<Post[]> {
+  async getPosts(filters?: FeedFilters, query: PostsQuery = {}): Promise<Post[]> {
     if (isSupabaseConfigured()) {
       try {
-        let query = supabase
-          .from('posts')
-          .select(`
-            *,
-            autor:profiles(*, athlete_profile:athlete_profiles(*)),
-            comments(*, autor:profiles(nombre, avatar_url, rol))
-          `)
-          .order('created_at', { ascending: false });
-
-        const { data, error } = await query;
-        if (error) throw error;
-        const posts = ((data as any[]) || []).map((post) => {
-          const athleteProfile = Array.isArray(post.autor?.athlete_profile)
-            ? post.autor.athlete_profile[0]
-            : post.autor?.athlete_profile;
-
-          return {
-            ...post,
-            athlete_info: post.athlete_info || athleteProfile || undefined,
-          };
-        }) as Post[];
-
-        return posts.filter((post) => postMatchesFilters(post, filters));
+        const { rows } = await fetchPostRows(query);
+        return rows.filter((post) => postMatchesFilters(post, filters));
       } catch (err) {
         console.warn('Fallback a datos locales para posts:', err);
       }
     }
 
     // Filtrado local
-    return localPosts.filter((post) => postMatchesFilters(post, filters));
+    return localPostRows(query).filter((post) => postMatchesFilters(post, filters));
+  },
+
+  /** Una página del feed. Con Supabase configurado, un fallo se propaga para poder mostrarlo. */
+  async getPostsPage(filters?: FeedFilters, query: PostsQuery = {}): Promise<PostsPage> {
+    const offset = query.offset ?? 0;
+    const limit = query.limit ?? POSTS_PAGE_SIZE;
+
+    if (isSupabaseConfigured()) {
+      const { rows, read } = await fetchPostRows({ ...query, offset, limit });
+      return {
+        posts: rows.filter((post) => postMatchesFilters(post, filters)),
+        nextOffset: offset + read,
+        hasMore: read === limit,
+      };
+    }
+
+    const all = localPostRows(query);
+    const slice = all.slice(offset, offset + limit);
+    return {
+      posts: slice.filter((post) => postMatchesFilters(post, filters)),
+      nextOffset: offset + slice.length,
+      hasMore: offset + slice.length < all.length,
+    };
   },
 
   async createPost({
@@ -55,28 +114,25 @@ export const postsService = {
     athlete_info,
   }: Partial<Post> & { user_id: string; video_url: string; descripcion: string; deporte: string }): Promise<Post> {
     if (isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .insert({
-            user_id,
-            video_url,
-            media_type,
-            storage_path,
-            titulo: titulo || 'Nuevo video destacado',
-            descripcion,
-            deporte,
-            duracion,
-            thumbnail_url: thumbnail_url || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1000&auto=format&fit=crop&q=80',
-          })
-          .select('*, autor:profiles(*)')
-          .single();
+      // Con Supabase configurado no se guarda una copia local: un fallo debe llegar al usuario.
+      const { data, error } = await supabase
+        .from('posts')
+        .insert({
+          user_id,
+          video_url,
+          media_type,
+          storage_path,
+          titulo: titulo || 'Nuevo video destacado',
+          descripcion,
+          deporte,
+          duracion,
+          thumbnail_url: thumbnail_url || 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1000&auto=format&fit=crop&q=80',
+        })
+        .select('*, autor:profiles(*)')
+        .single();
 
-        if (error) throw error;
-        return data as Post;
-      } catch (err) {
-        console.warn('Error creando post en Supabase, guardando local:', err);
-      }
+      if (error) throw error;
+      return data as Post;
     }
 
     const newPost: Post = {

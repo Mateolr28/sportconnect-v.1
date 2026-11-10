@@ -18,6 +18,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const otherUser = chat?.other_participant;
@@ -87,8 +88,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
       // Actualizar mensajes localmente de forma inmediata
       setMessages((prev) => (prev.some((m) => m.id === newMsg.id) ? prev : [...prev, newMsg]));
       if (onMessageSent) onMessageSent();
+      setSendError(null);
     } catch (err) {
       console.error('Error enviando mensaje:', err);
+      // El mensaje no se guardó: se devuelve al campo para reintentar.
+      setInputText((current) => current || text);
+      setSendError('No se pudo enviar el mensaje. Revisa tu conexión e inténtalo de nuevo.');
     }
   };
 
@@ -165,6 +170,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ chat, onMessageSent, onB
 
       {/* 3. Input inferior para escribir y enviar */}
       <div className="p-4 bg-white border-t border-slate-200">
+        {sendError && (
+          <p role="alert" className="mb-2 text-xs font-medium text-red-600">
+            {sendError}
+          </p>
+        )}
         <form onSubmit={handleSend} className="flex items-center gap-3">
           <div className="flex-1 relative flex items-center">
             <input

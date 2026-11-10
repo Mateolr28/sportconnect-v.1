@@ -256,31 +256,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data.user) {
         // El perfil base (profiles) lo crea el trigger handle_new_user a partir de los metadatos:
         // el rol no es editable desde el cliente.
-        if (rol === 'deportista') {
-          await supabase.from('athlete_profiles').upsert({
-            user_id: data.user.id,
-            disciplina,
-            posicion,
-            especialidad: posicion,
-            categoria,
-            modalidad_competencia,
-            edad: edad || 20,
-            partidos: 0,
-            goles: 0,
-            asistencias: 0,
-            logros: [],
-          });
-        } else {
-          await supabase.from('recruiter_profiles').upsert({
-            user_id: data.user.id,
-            nombre_club: nombre,
-            tipo_institucion: 'Club Profesional',
-            deportistas_contactados: 0,
-            contrataciones: 0,
-            scouts_activos: 1,
-            perfiles_buscados: ['Delanteros veloces', 'Mediocampistas creativos'],
-          });
-        }
+        // También crea athlete_profiles o recruiter_profiles con los datos elegidos en el registro.
       }
 
       return { error: null };
@@ -357,34 +333,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Actualizar perfil
   const updateProfile = async (updatedData: Partial<Profile>) => {
     if (!profile) return;
-    const updated = { ...profile, ...updatedData };
-    setProfile(updated);
 
+    // Primero se guarda: el estado local solo cambia si la base de datos aceptó el cambio.
     if (configured) {
-      await supabase.from('profiles').update(updatedData).eq('id', profile.id);
+      const { error } = await supabase.from('profiles').update(updatedData).eq('id', profile.id);
+      if (error) throw error;
     }
+    setProfile({ ...profile, ...updatedData });
   };
 
   // Actualizar perfil de atleta
   const updateAthleteProfile = async (updatedData: Partial<AthleteProfile>) => {
     if (!athleteProfile) return;
-    const updated = { ...athleteProfile, ...updatedData };
-    setAthleteProfile(updated);
 
     if (configured && profile) {
-      await supabase.from('athlete_profiles').update(updatedData).eq('user_id', profile.id);
+      const { error } = await supabase.from('athlete_profiles').update(updatedData).eq('user_id', profile.id);
+      if (error) throw error;
     }
+    setAthleteProfile({ ...athleteProfile, ...updatedData });
   };
 
   // Actualizar perfil de reclutador
   const updateRecruiterProfile = async (updatedData: Partial<RecruiterProfile>) => {
     if (!recruiterProfile) return;
-    const updated = { ...recruiterProfile, ...updatedData };
-    setRecruiterProfile(updated);
 
     if (configured && profile) {
-      await supabase.from('recruiter_profiles').update(updatedData).eq('user_id', profile.id);
+      const { error } = await supabase.from('recruiter_profiles').update(updatedData).eq('user_id', profile.id);
+      if (error) throw error;
     }
+    setRecruiterProfile({ ...recruiterProfile, ...updatedData });
   };
 
   return (

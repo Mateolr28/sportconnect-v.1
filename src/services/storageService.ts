@@ -9,7 +9,8 @@ export const storageService = {
     options?: { thumbnail?: Blob }
   ): Promise<{ url: string; path: string; thumbnailUrl?: string }> {
     if (isSupabaseConfigured()) {
-      try {
+      // Con Supabase configurado un fallo se propaga: no se publica un archivo que solo existe en este navegador.
+      {
         const fileExt = file.name.split('.').pop() || 'mp4';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
@@ -56,8 +57,6 @@ export const storageService = {
           path: filePath,
           thumbnailUrl,
         };
-      } catch (err) {
-        console.warn('Error subiendo video a Supabase Storage, usando blob/simulación:', err);
       }
     }
 
@@ -77,7 +76,7 @@ export const storageService = {
 
   async uploadImage(file: File, userId: string, onProgress?: (percent: number) => void): Promise<{ url: string; path: string }> {
     if (isSupabaseConfigured()) {
-      try {
+      {
         const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `${userId}/${fileName}`;
@@ -93,8 +92,6 @@ export const storageService = {
         const { data } = supabase.storage.from('sports-videos').getPublicUrl(filePath);
         onProgress?.(100);
         return { url: data.publicUrl, path: filePath };
-      } catch (err) {
-        console.warn('Error subiendo imagen a Supabase Storage, usando blob local:', err);
       }
     }
 
@@ -110,7 +107,7 @@ export const storageService = {
 
   async uploadAvatar(file: File, userId: string): Promise<string> {
     if (isSupabaseConfigured()) {
-      try {
+      {
         const fileExt = file.name.split('.').pop() || 'png';
         const filePath = `${userId}/avatar-${Date.now()}.${fileExt}`;
 
@@ -125,11 +122,13 @@ export const storageService = {
           .getPublicUrl(filePath);
 
         // Actualizar tabla profiles
-        await supabase.from('profiles').update({ avatar_url: publicData.publicUrl }).eq('id', userId);
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: publicData.publicUrl })
+          .eq('id', userId);
+        if (profileError) throw profileError;
 
         return publicData.publicUrl;
-      } catch (err) {
-        console.warn('Error subiendo avatar a Supabase Storage:', err);
       }
     }
 

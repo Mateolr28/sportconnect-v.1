@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Profile, AthleteProfile, RecruiterProfile, Post } from '../types';
 import { AthleteProfileView } from '../components/AthleteProfileView';
 import { RecruiterProfileView } from '../components/RecruiterProfileView';
-import { EditProfileModal } from '../components/EditProfileModal';
 import { supabaseService } from '../services/supabaseService';
 import { FollowListModal } from '../components/FollowListModal';
 import { FollowListType } from '../components/FollowStats';
+
+// El modal incluye el catálogo mundial de países y ciudades: se descarga solo al abrirlo.
+const EditProfileModal = lazy(() =>
+  import('../components/EditProfileModal').then((module) => ({ default: module.EditProfileModal }))
+);
 
 interface ProfilePageProps {
   viewingUserId?: string | null;
@@ -94,8 +98,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
 
         // Cargar posts del usuario activo
         if (loggedInProfile) {
-          const allPosts = await supabaseService.getPosts();
-          setUserPosts(allPosts.filter((p) => p.user_id === loggedInProfile.id));
+          setUserPosts(await supabaseService.getPosts(undefined, { userIds: [loggedInProfile.id] }));
         }
       } else if (viewingUserId) {
         setIsLoading(true);
@@ -105,8 +108,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
           setTargetAthlete(res.athlete || null);
           setTargetRecruiter(res.recruiter || null);
 
-          const allPosts = await supabaseService.getPosts();
-          setUserPosts(allPosts.filter((p) => p.user_id === viewingUserId));
+          setUserPosts(await supabaseService.getPosts(undefined, { userIds: [viewingUserId] }));
         } finally {
           setIsLoading(false);
         }
@@ -169,10 +171,14 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
       )}
 
       {/* Modal de edición */}
-      <EditProfileModal
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-      />
+      {isEditModalOpen && (
+        <Suspense fallback={null}>
+          <EditProfileModal
+            isOpen={isEditModalOpen}
+            onClose={() => setIsEditModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

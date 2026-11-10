@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Sidebar } from './components/Sidebar';
 import { FeedPage } from './pages/FeedPage';
@@ -8,14 +8,28 @@ import { MessagesPage } from './pages/MessagesPage';
 import { SearchPage } from './pages/SearchPage';
 import { ProspectsPage } from './pages/ProspectsPage';
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { SupabaseInfoModal } from './components/SupabaseInfoModal';
 import { supabaseService } from './services/supabaseService';
 import { supabase, isSupabaseConfigured } from './lib/supabase';
 import { Profile } from './types';
+import { AppTab, isAppTab, useRoute } from './lib/router';
 import { Home, User, Upload, MessageCircle, Search, Compass, Bookmark } from 'lucide-react';
+
+// El registro incluye el catálogo mundial de países y ciudades: se descarga solo al abrirlo.
+const RegisterPage = lazy(() =>
+  import('./pages/RegisterPage').then((module) => ({ default: module.RegisterPage }))
+);
+
+const FullScreenLoader = ({ label }: { label: string }) => (
+  <div className="min-h-screen bg-[#0a1128] flex items-center justify-center">
+    <div className="text-center space-y-3">
+      <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+      <p className="text-slate-300 text-sm font-medium">{label}</p>
+    </div>
+  </div>
+);
 
 function AppContent() {
   const { user, profile, isLoading, isRecovering } = useAuth();
@@ -23,8 +37,12 @@ function AppContent() {
     // Un enlace de recuperación vencido o ya usado llega con error en la URL: se ofrece pedir otro
     () => (typeof window !== 'undefined' && /error_code=otp_expired/.test(window.location.hash) ? 'forgot' : 'login')
   );
-  const [currentTab, setCurrentTab] = useState<string>('inicio');
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
+  const [route, navigate] = useRoute();
+  // Prospectos es solo para reclutadores: cualquier otro rol que abra esa URL va a inicio
+  const currentTab: AppTab =
+    route.tab === 'prospectos' && profile && profile.rol !== 'reclutador' ? 'inicio' : route.tab;
+  const viewingUserId = route.userId;
+  const setCurrentTab = (tab: AppTab) => navigate(tab);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState(false);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState(0);
@@ -88,14 +106,7 @@ function AppContent() {
 
   // Pantalla de carga inicial
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#0a1128] flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-slate-300 text-sm font-medium">Iniciando SportConnect...</p>
-        </div>
-      </div>
-    );
+    return <FullScreenLoader label="Iniciando SportConnect..." />;
   }
 
   // Llegó desde el enlace del correo: debe elegir una contraseña nueva antes de entrar
@@ -107,10 +118,12 @@ function AppContent() {
   if (!user || !profile) {
     if (authView === 'register') {
       return (
-        <RegisterPage
-          onNavigateToLogin={() => setAuthView('login')}
-          onRegisterSuccess={() => setAuthView('login')}
-        />
+        <Suspense fallback={<FullScreenLoader label="Cargando registro..." />}>
+          <RegisterPage
+            onNavigateToLogin={() => setAuthView('login')}
+            onRegisterSuccess={() => setAuthView('login')}
+          />
+        </Suspense>
       );
     }
     if (authView === 'forgot') {
@@ -123,7 +136,8 @@ function AppContent() {
       <LoginPage
         onNavigateToRegister={() => setAuthView('register')}
         onNavigateToForgot={() => setAuthView('forgot')}
-        onLoginSuccess={() => setCurrentTab('inicio')}
+        // Se conserva la URL: quien abre un enlace a un perfil llega a él tras iniciar sesión
+        onLoginSuccess={() => undefined}
       />
     );
   }
@@ -140,13 +154,18 @@ function AppContent() {
       setCurrentTab('mensajes');
     } catch (err) {
       console.error('Error al contactar deportista:', err);
+      window.alert('No se pudo abrir la conversación. Revisa tu conexión e inténtalo de nuevo.');
     }
   };
 
   // Acción: Ver perfil específico
   const handleViewProfile = (userId: string) => {
-    setViewingUserId(userId);
-    setCurrentTab('perfil');
+    navigate('perfil', userId === profile.id ? null : userId);
+  };
+
+  // Seleccionar "Perfil" en el menú siempre lleva al perfil propio
+  const handleSelectTab = (tab: string) => {
+    if (isAppTab(tab)) navigate(tab);
   };
 
   return (
@@ -156,10 +175,7 @@ function AppContent() {
         <Sidebar
           currentTab={currentTab}
           unreadMessagesCount={unreadMessagesCount}
-          onSelectTab={(tab) => {
-            if (tab === 'perfil') setViewingUserId(null); // Ver perfil propio
-            setCurrentTab(tab);
-          }}
+          onSelectTab={handleSelectTab}
         />
       </div>
 
@@ -236,10 +252,7 @@ function AppContent() {
           return (
             <button
               key={item.id}
-              onClick={() => {
-                if (item.id === 'perfil') setViewingUserId(null);
-                setCurrentTab(item.id);
-              }}
+              onClick={() => handleSelectTab(item.id)}
               className={`flex flex-col items-center gap-1 text-[11px] font-medium transition-colors ${
                 isActive ? 'text-[#1E3A8A]' : 'text-slate-500 hover:text-slate-900'
               }`}

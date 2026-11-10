@@ -70,23 +70,20 @@ export const chatService = {
 
   async sendMessage(chatId: string, senderId: string, contenido: string): Promise<Message> {
     if (isSupabaseConfigured()) {
-      try {
-        const { data, error } = await supabase
-          .from('messages')
-          .insert({
-            chat_id: chatId,
-            sender_id: senderId,
-            contenido,
-            leido: false,
-          })
-          .select('*, sender:profiles(*)')
-          .single();
+      // Con Supabase configurado no se simula el envío: un fallo debe llegar al usuario.
+      const { data, error } = await supabase
+        .from('messages')
+        .insert({
+          chat_id: chatId,
+          sender_id: senderId,
+          contenido,
+          leido: false,
+        })
+        .select('*, sender:profiles(*)')
+        .single();
 
-        if (error) throw error;
-        return data as Message;
-      } catch (err) {
-        console.warn('Error enviando mensaje a Supabase:', err);
-      }
+      if (error) throw error;
+      return data as Message;
     }
 
     const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -144,29 +141,26 @@ export const chatService = {
 
   async getOrCreateChat(currentUserId: string, targetUserId: string, targetProfile?: Profile): Promise<Chat> {
     if (isSupabaseConfigured()) {
-      try {
-        // Buscar o crear el chat en el servidor (RLS no permite insertar participantes directamente)
-        const { data: chatId, error: rpcErr } = await supabase.rpc('get_or_create_chat', {
-          p_target_user_id: targetUserId,
-        });
-        if (rpcErr) throw rpcErr;
+      // Buscar o crear el chat en el servidor (RLS no permite insertar participantes directamente).
+      // Si falla no se crea un chat local: sus mensajes nunca llegarían al destinatario.
+      const { data: chatId, error: rpcErr } = await supabase.rpc('get_or_create_chat', {
+        p_target_user_id: targetUserId,
+      });
+      if (rpcErr) throw rpcErr;
 
-        const { data: chatData, error: chatErr } = await supabase
-          .from('chats')
-          .select('*')
-          .eq('id', chatId)
-          .single();
-        if (chatErr) throw chatErr;
+      const { data: chatData, error: chatErr } = await supabase
+        .from('chats')
+        .select('*')
+        .eq('id', chatId)
+        .single();
+      if (chatErr) throw chatErr;
 
-        return {
-          id: chatData.id,
-          created_at: chatData.created_at,
-          updated_at: chatData.updated_at,
-          other_participant: targetProfile,
-        };
-      } catch (err) {
-        console.warn('Error creando chat en Supabase, creando local:', err);
-      }
+      return {
+        id: chatData.id,
+        created_at: chatData.created_at,
+        updated_at: chatData.updated_at,
+        other_participant: targetProfile,
+      };
     }
 
     // Comprobar si ya existe localmente

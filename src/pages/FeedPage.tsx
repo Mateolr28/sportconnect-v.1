@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, SlidersHorizontal, Plus } from 'lucide-react';
 import { Post, FeedFilters, Profile } from '../types';
 import { VideoCard } from '../components/VideoCard';
 import { FilterModal } from '../components/FilterModal';
 import { CommentsModal } from '../components/CommentsModal';
 import { supabaseService } from '../services/supabaseService';
+import { POSTS_PAGE_SIZE } from '../services/postsService';
 import { useAuth } from '../contexts/AuthContext';
 
 interface FeedPageProps {
@@ -27,6 +28,11 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   const [posts, setPosts] = useState<Post[]>([]);
   const [followingIds, setFollowingIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextOffset, setNextOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const requestRef = useRef(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FeedFilters>({
     searchQuery: '',
@@ -35,23 +41,62 @@ export const FeedPage: React.FC<FeedPageProps> = ({
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [selectedPostForComments, setSelectedPostForComments] = useState<Post | null>(null);
 
+  // En "Siguiendo" la consulta ya se limita a las personas seguidas y al propio usuario.
+  const authorsFor = (ids: string[]) =>
+    mode === 'following' ? [...ids, ...(profile ? [profile.id] : [])] : undefined;
+
+  // Carga desde el principio. En modo silencioso vuelve a pedir lo que ya estaba en pantalla.
   const fetchPosts = async (silent = false) => {
+    const requestId = ++requestRef.current;
     if (!silent) setIsLoading(true);
     try {
-      const [data, ids] = await Promise.all([
-        supabaseService.getPosts(filters),
-        profile ? supabaseService.getFollowingIds(profile.id) : Promise.resolve([] as string[]),
-      ]);
+      const ids = profile ? await supabaseService.getFollowingIds(profile.id) : [];
+      const page = await supabaseService.getPostsPage(filters, {
+        userIds: authorsFor(ids),
+        offset: 0,
+        limit: silent ? Math.max(nextOffset, POSTS_PAGE_SIZE) : POSTS_PAGE_SIZE,
+      });
+      if (requestId !== requestRef.current) return;
       setFollowingIds(ids);
-      setPosts(
-        mode === 'following'
-          ? data.filter((post) => ids.includes(post.user_id) || post.user_id === profile?.id)
-          : data
-      );
+      setPosts(page.posts);
+      setNextOffset(page.nextOffset);
+      setHasMore(page.hasMore);
+      setLoadError(null);
     } catch (err) {
       console.error('Error al cargar feed:', err);
+      if (requestId === requestRef.current && !silent) {
+        setPosts([]);
+        setHasMore(false);
+        setLoadError('No se pudieron cargar las publicaciones. Revisa tu conexión e inténtalo de nuevo.');
+      }
     } finally {
-      setIsLoading(false);
+      if (requestId === requestRef.current) setIsLoading(false);
+    }
+  };
+
+  const fetchMorePosts = async () => {
+    if (isLoadingMore || !hasMore) return;
+    const requestId = requestRef.current;
+    setIsLoadingMore(true);
+    try {
+      const page = await supabaseService.getPostsPage(filters, {
+        userIds: authorsFor(followingIds),
+        offset: nextOffset,
+        limit: POSTS_PAGE_SIZE,
+      });
+      if (requestId !== requestRef.current) return;
+      setPosts((current) => {
+        const known = new Set(current.map((post) => post.id));
+        return [...current, ...page.posts.filter((post) => !known.has(post.id))];
+      });
+      setNextOffset(page.nextOffset);
+      setHasMore(page.hasMore);
+      setLoadError(null);
+    } catch (err) {
+      console.error('Error al cargar más publicaciones:', err);
+      setLoadError('No se pudieron cargar más publicaciones. Inténtalo de nuevo.');
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -142,6 +187,29 @@ export const FeedPage: React.FC<FeedPageProps> = ({
               </div>
             ))}
           </div>
+        ) : posts.length === 0 && loadError ? (
+          <div role="alert" className="bg-white rounded-2xl border border-red-200 p-12 text-center space-y-3">
+            <p className="text-slate-700 font-semibold text-base">{loadError}</p>
+            <button
+              onClick={() => fetchPosts()}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A8A] text-white rounded-xl text-xs font-semibold hover:bg-blue-900 transition-colors shadow-sm"
+            >
+              Reintentar
+            </button>
+          </div>
+        ) : posts.length === 0 && hasMore ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
+            <p className="text-slate-600 font-semibold text-base">
+              Ninguna de las publicaciones más recientes coincide con los filtros
+            </p>
+            <button
+              onClick={fetchMorePosts}
+              disabled={isLoadingMore}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1E3A8A] text-white rounded-xl text-xs font-semibold hover:bg-blue-900 transition-colors shadow-sm disabled:opacity-60"
+            >
+              {isLoadingMore ? 'Buscando...' : 'Buscar en publicaciones anteriores'}
+            </button>
+          </div>
         ) : posts.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-3">
             {mode === 'following' ? (
@@ -184,17 +252,33 @@ export const FeedPage: React.FC<FeedPageProps> = ({
             )}
           </div>
         ) : (
-          posts.map((post) => (
-            <VideoCard
-              key={post.id}
-              post={post}
-              onOpenComments={(p) => setSelectedPostForComments(p)}
-              onContactAthlete={(athleteUser) => onContactAthlete(athleteUser)}
-              onViewProfile={onViewProfile}
-              isFollowing={followingIds.includes(post.user_id)}
-              onToggleFollow={handleToggleFollow}
-            />
-          ))
+          <>
+            {posts.map((post) => (
+              <VideoCard
+                key={post.id}
+                post={post}
+                onOpenComments={(p) => setSelectedPostForComments(p)}
+                onContactAthlete={(athleteUser) => onContactAthlete(athleteUser)}
+                onViewProfile={onViewProfile}
+                isFollowing={followingIds.includes(post.user_id)}
+                onToggleFollow={handleToggleFollow}
+              />
+            ))}
+            {loadError && (
+              <p role="alert" className="text-center text-xs font-medium text-red-600">{loadError}</p>
+            )}
+            {hasMore && (
+              <div className="flex justify-center">
+                <button
+                  onClick={fetchMorePosts}
+                  disabled={isLoadingMore}
+                  className="px-5 py-2.5 bg-white border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors shadow-xs disabled:opacity-60"
+                >
+                  {isLoadingMore ? 'Cargando...' : 'Cargar más publicaciones'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
