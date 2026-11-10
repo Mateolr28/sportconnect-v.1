@@ -96,11 +96,10 @@ DECLARE
     chat1_id UUID := 'd1111111-1111-4111-d111-111111111111';
 BEGIN
     -- Perfil 1: Carlos Martínez (Deportista destacado)
-    INSERT INTO public.profiles (id, nombre, email, rol, ubicacion, avatar_url, bio, fecha_registro)
+    INSERT INTO public.profiles (id, nombre, rol, ubicacion, avatar_url, bio, fecha_registro)
     VALUES (
         athlete1_id,
         'Carlos Martínez',
-        'carlos.martinez@sportconnect.dev',
         'deportista',
         'Madrid, España',
         'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
@@ -121,11 +120,10 @@ BEGIN
     ) ON CONFLICT (user_id) DO NOTHING;
 
     -- Perfil 2: Ana Rodríguez (Deportista baloncesto)
-    INSERT INTO public.profiles (id, nombre, email, rol, ubicacion, avatar_url, bio, fecha_registro)
+    INSERT INTO public.profiles (id, nombre, rol, ubicacion, avatar_url, bio, fecha_registro)
     VALUES (
         athlete2_id,
         'Ana Rodríguez',
-        'ana.rodriguez@sportconnect.dev',
         'deportista',
         'Valencia, España',
         'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80',
@@ -146,11 +144,10 @@ BEGIN
     ) ON CONFLICT (user_id) DO NOTHING;
 
     -- Perfil 3: FC Barcelona Academy (Reclutador)
-    INSERT INTO public.profiles (id, nombre, email, rol, ubicacion, avatar_url, bio, fecha_registro)
+    INSERT INTO public.profiles (id, nombre, rol, ubicacion, avatar_url, bio, fecha_registro)
     VALUES (
         recruiter1_id,
         'FC Barcelona Academy',
-        'scout.fcb@sportconnect.dev',
         'reclutador',
         'Barcelona, España',
         'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=300&auto=format&fit=crop&q=80',
@@ -170,11 +167,10 @@ BEGIN
     ) ON CONFLICT (user_id) DO NOTHING;
 
     -- Perfil 4: Real Madrid Scout (Reclutador)
-    INSERT INTO public.profiles (id, nombre, email, rol, ubicacion, avatar_url, bio, fecha_registro)
+    INSERT INTO public.profiles (id, nombre, rol, ubicacion, avatar_url, bio, fecha_registro)
     VALUES (
         recruiter2_id,
         'Real Madrid Scout',
-        'scout.rm@sportconnect.dev',
         'reclutador',
         'Madrid, España',
         'https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=300&auto=format&fit=crop&q=80',

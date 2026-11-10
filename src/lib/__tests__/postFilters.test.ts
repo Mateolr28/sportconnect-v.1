@@ -11,7 +11,7 @@ const post = {
   likes_count: 0,
   comments_count: 0,
   created_at: '',
-  autor: { id: 'u1', nombre: 'Andrés Gómez', email: '', rol: 'deportista', ubicacion: 'Medellín, Antioquia, Colombia' },
+  autor: { id: 'u1', nombre: 'Andrés Gómez', rol: 'deportista', ubicacion: 'Medellín, Antioquia, Colombia' },
   athlete_info: { disciplina: 'Fútbol', posicion: 'Delantero', edad: 19 },
 } as Post;
 

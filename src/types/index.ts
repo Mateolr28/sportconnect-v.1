@@ -7,7 +7,6 @@ export type UserRole = 'deportista' | 'reclutador';
 export interface Profile {
   id: string;
   nombre: string;
-  email: string;
   rol: UserRole;
   primer_nombre?: string;
   segundo_nombre?: string;

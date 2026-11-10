@@ -183,7 +183,6 @@ export const chatService = {
       other_participant: targetProfile || {
         id: targetUserId,
         nombre: 'Deportista Contactado',
-        email: 'contacto@sportconnect.dev',
         rol: 'deportista',
         ubicacion: 'Madrid, España',
       },

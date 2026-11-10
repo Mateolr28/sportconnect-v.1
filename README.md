@@ -2,14 +2,14 @@
 
 SportConnect es una plataforma web full-stack de alto rendimiento diseñada para la visibilización de talentos deportivos, el reclutamiento por parte de clubes/academias y la comunicación directa y en tiempo real entre deportistas y reclutadores.
 
-Toda la arquitectura de persistencia, autenticación, almacenamiento multimedia y eventos en tiempo real está construida sobre **Supabase** (PostgreSQL, Supabase Auth, Supabase Storage y Supabase Realtime), complementada con un backend en **Node.js + Express** para lógica de servidor y un cliente web con **React + Vite + Tailwind CSS**.
+Toda la arquitectura de persistencia, autenticación, almacenamiento multimedia y eventos en tiempo real está construida sobre **Supabase** (PostgreSQL, Supabase Auth, Supabase Storage y Supabase Realtime). El cliente web usa **React + Vite + Tailwind CSS** y un servidor **Node.js + Express** mínimo que solo sirve la aplicación.
 
 ---
 
 ## 🚀 1. Stack Tecnológico
 
 - **Frontend:** React 19, Vite, Tailwind CSS v4, Lucide React icons.
-- **Backend:** Node.js, Express.js.
+- **Servidor web:** Node.js + Express (solo sirve el cliente; sin API propia).
 - **Backend-as-a-Service:** Supabase.
   - **Base de Datos:** PostgreSQL con extensiones `uuid-ossp` y `pgcrypto`.
   - **Autenticación:** Supabase Auth (Email y Contraseña, Row Level Security).
@@ -29,21 +29,7 @@ SportConnect/
 ├── package.json                     # Scripts y dependencias unificadas
 ├── tsconfig.json                    # Configuración TypeScript
 ├── vite.config.ts                   # Configuración Vite + Tailwind CSS
-├── server.ts                        # Servidor unificado Express + Vite middlewares
-│
-├── server/                          # Backend Express
-│   └── src/
-│       ├── controllers/
-│       │   ├── chatsController.ts   # Lógica de chats y mensajes
-│       │   ├── postsController.ts   # CRUD de videos deportivos y likes
-│       │   └── profilesController.ts# Perfiles de deportistas y scouts
-│       ├── middleware/
-│       │   └── authMiddleware.ts    # Verificación de JWT con Supabase Admin
-│       ├── routes/
-│       │   └── apiRoutes.ts         # Rutas de la API REST (/api/*)
-│       ├── lib/
-│       │   └── supabaseServer.ts    # Cliente Supabase con Service Role
-│       └── app.ts                   # Configuración Express y CORS
+├── server.ts                        # Servidor Express que sirve el cliente (Vite en desarrollo)
 │
 ├── src/                             # Frontend React
 │   ├── components/
@@ -95,15 +81,13 @@ Configura tu archivo `.env` tomando como base `.env.example`:
 ### Frontend (Públicas - comienzan con `VITE_`):
 - `VITE_SUPABASE_URL`: URL del proyecto Supabase (ej. `https://xyzcompany.supabase.co`).
 - `VITE_SUPABASE_ANON_KEY`: Llave pública `anon` de Supabase. Es segura para el navegador ya que está restringida por las políticas Row Level Security (RLS).
-- `VITE_API_URL`: URL base del backend Express (opcional si se ejecuta de forma unificada).
 
 > **Importante:** la URL y la clave deben pertenecer al mismo proyecto Supabase activo. Si el navegador muestra `ERR_NAME_NOT_RESOLVED` al llamar a `/auth/v1/token`, el dominio configurado ya no resuelve (por ejemplo, el proyecto fue eliminado o la URL es antigua). Actualiza `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` con los valores de **Project Settings > API** y reinicia el servidor de desarrollo para que Vite vuelva a cargar `.env`.
 
-### Backend (Privadas - NUNCA exponer al cliente o navegador):
-- `SUPABASE_URL`: URL del proyecto Supabase.
-- `SUPABASE_ANON_KEY`: Llave anónima para consultas estándar en el servidor.
-- `SUPABASE_SERVICE_ROLE_KEY`: **¡Privada y Crítica!** Permite bypass de RLS para tareas de administración o triggers del servidor.
+### Servidor:
 - `PORT`: Puerto de escucha del servidor (por defecto `3000`).
+
+> La aplicación no usa `SUPABASE_SERVICE_ROLE_KEY`: todo el acceso a datos pasa por la clave `anon` y las políticas RLS. No la pongas en `.env`.
 
 ---
 
@@ -136,7 +120,7 @@ Configura tu archivo `.env` tomando como base `.env.example`:
    npm install
    ```
 
-2. **Ejecutar en modo Desarrollo (Frontend + Backend unificado):**
+2. **Ejecutar en modo Desarrollo (Vite servido por Express):**
    ```bash
    npm run dev
    ```

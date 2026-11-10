@@ -254,22 +254,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (data.user) {
-        // En caso de que el trigger no esté aún aplicado en la instancia, aseguramos profile
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          nombre,
-          email,
-          rol,
-          ubicacion,
-          primer_nombre,
-          segundo_nombre,
-          primer_apellido,
-          segundo_apellido,
-          pais_nacimiento,
-          region_nacimiento,
-          ciudad_nacimiento,
-        });
-
+        // El perfil base (profiles) lo crea el trigger handle_new_user a partir de los metadatos:
+        // el rol no es editable desde el cliente.
         if (rol === 'deportista') {
           await supabase.from('athlete_profiles').upsert({
             user_id: data.user.id,

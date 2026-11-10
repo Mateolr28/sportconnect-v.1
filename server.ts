@@ -1,15 +1,17 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import { createApp } from './server/src/app';
+import express from 'express';
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Servidor web de SportConnect: solo sirve el cliente React.
+// Los datos se consultan directamente en Supabase desde el navegador, protegidos por RLS.
 async function startServer() {
-  const app = createApp();
+  const app = express();
   const PORT = process.env.PORT || 3000;
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -27,7 +29,6 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     // Modo producción: Servir archivos estáticos de dist
-    const express = (await import('express')).default;
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
 
@@ -38,7 +39,6 @@ async function startServer() {
 
   app.listen(PORT, () => {
     console.log(`🚀 SportConnect servidor ejecutándose en http://localhost:${PORT}`);
-    console.log(`📡 API lista en http://localhost:${PORT}/api/health`);
   });
 }
 
